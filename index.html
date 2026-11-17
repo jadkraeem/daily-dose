@@ -252,7 +252,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
     <h1 style="font-family:'Playfair Display', serif; font-size:3.5rem; margin-bottom:15px; color:var(--dark);">Daily Dose</h1>
     <h2 style="color:#ef4444; margin-bottom:15px;">عذراً! ✋</h2>
     <p style="font-size:1.2rem; line-height: 1.6; max-width: 400px; margin: 0 auto; font-weight:600;">
-      خدمة الطلب الذاتي متاحة فقط للزبائن المتواجدين داخل المقهى والمتصلين بشبكة الواي فاي الخاصة بنا. ☕
+      عذراً، لا يمكن فتح هذه الصفحة. يجب الاتصال بشبكة الكافتيريا حصراً، وإيقاف تشغيل الـ VPN إن كان مفعلاً.
     </p>
   </div>
 </div>
@@ -286,7 +286,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       </div>
     </section>
 
-    <!-- الإعلانات والفعاليات المضافة حديثاً -->
+    <!-- الإعلانات والفعاليات -->
     <div class="info-boxes-wrapper reveal">
       <div class="info-box">
         <h3>📢 إعلانات ديلي دوز</h3>
@@ -581,6 +581,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       })
       .catch(error => {
           console.error("فشل في التحقق من الشبكة:", error);
+          // في حال فشل التحقق نفتح الموقع احتياطاً
           document.getElementById('main-website-content').style.display = 'block';
           initSystem();
       });
@@ -592,7 +593,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       const dbClient = window.supabase.createClient(supabaseUrl, supabaseKey);
       const restaurantId = 'eb399736-4a86-4109-86c5-798720f6d242';
 
-      // سحب رقم الطاولة حصراً من الرابط QR
+      // سحب رقم الطاولة من الرابط إن وُجد
       const urlParams = new URLSearchParams(window.location.search);
       const tableFromQR = urlParams.get('table');
 
@@ -661,13 +662,12 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         });
       };
 
+      // التعديل الجديد على دالة الدفع (Checkout)
       window.checkout = async function() {
         const btn = document.getElementById('submit-order-btn');
 
-        // الاعتماد الكلي على قراءة الطاولة من الـ QR
-        if (!tableFromQR) {
-            return alert('عذراً! لا يمكن إرسال الطلب. يرجى مسح رمز الـ QR الخاص بالطاولة لتقديم طلبك.');
-        }
+        // تحديد رقم الطاولة، إذا لم يمسح الكود يعتبر الطلب "غير معروف"
+        const finalTableNumber = tableFromQR ? tableFromQR : 'غير معروف';
 
         if (!cart.length) return alert('السلة فارغة!');
 
@@ -685,14 +685,18 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
                 .from('orders')
                 .insert([{
                     restaurant_id: restaurantId,
-                    table_number: tableFromQR,
+                    table_number: finalTableNumber,
                     items: orderItems,
                     status: 'pending'
                 }]);
 
             if (error) throw error;
 
-            alert('تم إرسال طلبك للكاشير بنجاح! ☕ سينزل طلبك قريباً للطاولة رقم ' + tableFromQR);
+            if (finalTableNumber === 'غير معروف') {
+                alert('تم إرسال طلبك للكاشير بنجاح! ☕');
+            } else {
+                alert('تم إرسال طلبك للكاشير بنجاح! ☕ سينزل طلبك قريباً للطاولة رقم ' + finalTableNumber);
+            }
             
             cart = [];
             updateCart();
