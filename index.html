@@ -179,6 +179,7 @@ section { padding: 75px 6%; }
 .price { color: var(--green); font-weight: 800; font-size: 20px; margin-bottom: 15px; direction: rtl; }
 .add-btn { width: 100%; padding: 11px; background: var(--green); border: none; border-radius: 25px; color: white; transition: .3s; font-weight:bold;}
 .add-btn:hover { background: var(--gold); color: var(--dark); }
+.add-btn.disabled-btn { background: #ccc !important; color: #666 !important; cursor: not-allowed; }
 
 .promo { margin: 0 6% 75px; border-radius: 28px; min-height: 300px; background: linear-gradient(90deg, #032e24ed, #032e2470), url('https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=1500') center/cover; display: flex; align-items: center; padding: 45px 8%; color: white; }
 .promo h2 { font-size: 36px; margin: 10px 0; }
@@ -211,7 +212,13 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
 .item-note { width: 100%; padding: 8px 12px; border: 1px solid #e9ddca; border-radius: 8px; font-family: inherit; font-size: 13px; outline: none; transition: .3s; }
 .item-note:focus { border-color: var(--gold); }
 
-.cart-total { display: flex; justify-content: space-between; font-weight: 800; margin: 15px 0; font-size: 18px; color: var(--green);}
+.table-select-box { margin-bottom: 12px; }
+.table-select-box select {
+  width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--gold);
+  background: var(--cream); color: var(--text); font-family: inherit; font-weight: bold; outline: none;
+}
+
+.cart-total { display: flex; justify-content: space-between; font-weight: 800; margin: 10px 0 15px; font-size: 18px; color: var(--green);}
 
 .checkout {
   width: 100%; padding: 14px; border: none; border-radius: 25px;
@@ -246,7 +253,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
 
 <body>
 
-<!-- شاشة الرفض لمن هم خارج الكافيه -->
+<!-- شاشة الرفض لمن هم خارج الكافيه (لا تظهر إلا إذا فعلت التتبع من الكاشير) -->
 <div id="access-denied">
   <div>
     <h1 style="font-family:'Playfair Display', serif; font-size:3.5rem; margin-bottom:15px; color:var(--dark);">Daily Dose</h1>
@@ -257,8 +264,8 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
   </div>
 </div>
 
-<!-- الغلاف الكامل للموقع -->
-<div id="main-website-content" style="display: none;">
+<!-- الغلاف الكامل للموقع (مفتوح افتراضياً) -->
+<div id="main-website-content" style="display: block;">
 
   <header>
     <div class="logo">Daily Dose<small>CAFE & MORE</small></div>
@@ -286,12 +293,12 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       </div>
     </section>
 
-    <!-- الإعلانات والفعاليات -->
+    <!-- الإعلانات والفعاليات المرتبطة بالكاشير -->
     <div class="info-boxes-wrapper reveal">
       <div class="info-box">
         <h3>📢 إعلانات ديلي دوز</h3>
         <div class="marquee-container">
-          <div class="marquee-content">
+          <div class="marquee-content" id="dynamic-promo-marquee">
             أهلاً بكم في مقهى ديلي دوز! استمتعوا بتجربة أشهى أنواع القهوة والمشروبات ... خصومات خاصة على قائمة الفطور قريباً!
           </div>
         </div>
@@ -299,7 +306,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       <div class="info-box">
         <h3>🎉 الفعاليات</h3>
         <div class="marquee-container">
-          <div class="marquee-content">
+          <div class="marquee-content" id="dynamic-events-marquee">
             ترقبوا تغطيتنا لأهم المباريات الرياضية على شاشاتنا ... وسهرات موسيقية مميزة في عطلة نهاية الأسبوع!
           </div>
         </div>
@@ -311,7 +318,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <span>EXPLORE OUR MENU</span>
         <h2>اكتشف قائمتنا</h2>
       </div>
-      <div class="categories reveal">
+      <div class="categories reveal" id="categories-container">
         <button class="category active" onclick="filterMenu('all',this)">كل الأصناف</button>
         <button class="category" onclick="filterMenu('hot',this)">المشروبات الساخنة</button>
         <button class="category" onclick="filterMenu('cold',this)">المشروبات الباردة</button>
@@ -324,7 +331,6 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       <div class="products" id="products">
         
         <!-- ======================= المشروبات الساخنة ======================= -->
-        
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>قهوة تركية</h3><p>Turkish Coffee</p><div class="price">150 ل.س</div><button class="add-btn" onclick="addToCart('قهوة تركية', 150)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>ميلو</h3><p>Milo</p><div class="price">180 ل.س</div><button class="add-btn" onclick="addToCart('ميلو', 180)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>نسكافيه جولد وكافي ميت</h3><p>Nescafe Gold & Coffee Mate</p><div class="price">180 ل.س</div><button class="add-btn" onclick="addToCart('نسكافيه جولد وكافي ميت', 180)">+ أضف للسلة</button></div></article>
@@ -336,7 +342,6 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>اسبريسو دبل</h3><p>Espresso Doppio</p><div class="price">250 ل.س</div><button class="add-btn" onclick="addToCart('اسبريسو دبل', 250)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>اسبريسو لونقو</h3><p>Espresso Lungo</p><div class="price">150 ل.س</div><button class="add-btn" onclick="addToCart('اسبريسو لونقو', 150)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>اسبريسو سنقل</h3><p>Espresso Single</p><div class="price">150 ل.س</div><button class="add-btn" onclick="addToCart('اسبريسو سنقل', 150)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>زنجبيل وعسل مع برتقال</h3><p>Ginger & Honey with Orange</p><div class="price">220 ل.س</div><button class="add-btn" onclick="addToCart('زنجبيل وعسل مع برتقال', 220)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>زنجبيل وعسل</h3><p>Ginger & Honey</p><div class="price">150 ل.س</div><button class="add-btn" onclick="addToCart('زنجبيل وعسل', 150)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>شاي كرك</h3><p>Karak Tea</p><div class="price">200 ل.س</div><button class="add-btn" onclick="addToCart('شاي كرك', 200)">+ أضف للسلة</button></div></article>
@@ -347,7 +352,6 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>بابونج</h3><p>Chamomile</p><div class="price">120 ل.س</div><button class="add-btn" onclick="addToCart('بابونج', 120)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>كمون وليمون</h3><p>Cumin & Lemon</p><div class="price">120 ل.س</div><button class="add-btn" onclick="addToCart('كمون وليمون', 120)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>زهورات شامية</h3><p>Chamomile Flowers</p><div class="price">120 ل.س</div><button class="add-btn" onclick="addToCart('زهورات شامية', 120)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>كابتشينو كراميل</h3><p>Cappuccino Caramel</p><div class="price">270 ل.س</div><button class="add-btn" onclick="addToCart('كابتشينو كراميل', 270)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>كابتشينو بندق</h3><p>Cappuccino Hazelnut</p><div class="price">270 ل.س</div><button class="add-btn" onclick="addToCart('كابتشينو بندق', 270)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>كابتشينو فانيلا</h3><p>Cappuccino Vanilla</p><div class="price">270 ل.س</div><button class="add-btn" onclick="addToCart('كابتشينو فانيلا', 270)">+ أضف للسلة</button></div></article>
@@ -356,7 +360,6 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>هوت شوكلت سبايسي</h3><p>Hot Chocolate Spicy</p><div class="price">200 ل.س</div><button class="add-btn" onclick="addToCart('هوت شوكلت سبايسي', 200)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>هوت شوكلت لوتس</h3><p>Hot Chocolate Lotus</p><div class="price">200 ل.س</div><button class="add-btn" onclick="addToCart('هوت شوكلت لوتس', 200)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>هوت شوكلت</h3><p>Hot Chocolate</p><div class="price">180 ل.س</div><button class="add-btn" onclick="addToCart('هوت شوكلت', 180)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>جيلاتو كافي</h3><p>Gelato Coffee</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('جيلاتو كافي', 300)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>بيستاشيو لاتيه</h3><p>Pistachio Latte</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('بيستاشيو لاتيه', 300)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>موكا لاتيه</h3><p>Mocha Latte</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('موكا لاتيه', 300)">+ أضف للسلة</button></div></article>
@@ -368,7 +371,6 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <article class="product reveal" data-category="hot"><div class="product-info"><h3>كلاسيك لاتيه</h3><p>Classic Latte</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('كلاسيك لاتيه', 300)">+ أضف للسلة</button></div></article>
 
         <!-- ======================= المشروبات الباردة ======================= -->
-
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>ايس امريكانو</h3><p>Iced Americano</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('ايس امريكانو', 300)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>ايس كافي سنيكرز</h3><p>Iced Coffee Snickers</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('ايس كافي سنيكرز', 300)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>آيس بندق</h3><p>Iced Hazelnut</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('آيس بندق', 300)">+ أضف للسلة</button></div></article>
@@ -376,27 +378,22 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>أيس كراميل</h3><p>Iced Caramel</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('أيس كراميل', 300)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>آيس موكا لاتيه</h3><p>Iced Mocha Latte</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('آيس موكا لاتيه', 300)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>آيس كلاسيك</h3><p>Iced Classic</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('آيس كلاسيك', 300)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>فراب أوريو</h3><p>Frappe Oreo</p><div class="price">320 ل.س</div><button class="add-btn" onclick="addToCart('فراب أوريو', 320)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>فراب كراميل</h3><p>Frappe Caramel</p><div class="price">320 ل.س</div><button class="add-btn" onclick="addToCart('فراب كراميل', 320)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>فراب موكا</h3><p>Frappe Mocha</p><div class="price">320 ل.س</div><button class="add-btn" onclick="addToCart('فراب موكا', 320)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>فراب ديلي دوز</h3><p>Frappe Daily Dose</p><div class="price">320 ل.س</div><button class="add-btn" onclick="addToCart('فراب ديلي دوز', 320)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>موهيتو مسكه</h3><p>Mohito Musk</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('موهيتو مسكه', 280)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>موهيتو ديلي دوز</h3><p>Mohito Daily Dose</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('موهيتو ديلي دوز', 280)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>موهيتو كلاسيك</h3><p>Mohito Classic</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('موهيتو كلاسيك', 280)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>موهيتو بلو بيري</h3><p>Mohito Blueberry</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('موهيتو بلو بيري', 280)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>موهيتو ستروبيري</h3><p>Mohito Strawberry</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('موهيتو ستروبيري', 280)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>آيس تي ستروبيري</h3><p>Ice Tea Strawberry</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('آيس تي ستروبيري', 280)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>آيس تي دراق</h3><p>Ice Tea Peach</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('آيس تي دراق', 280)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>اينيرجي باشن فروت</h3><p>Energy Passion Fruit</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('اينيرجي باشن فروت', 280)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>اينيرجي بلو</h3><p>Energy Blue</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('اينيرجي بلو', 280)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>اينيرجي ميكس بيري</h3><p>Energy Mix Berry</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('اينيرجي ميكس بيري', 280)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>سموذي هاشتاق بلو</h3><p>Smoothie Hashtag Blue</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('سموذي هاشتاق بلو', 300)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>سموذي بلو ليمون</h3><p>Smoothie Blue Lemon</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('سموذي بلو ليمون', 300)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>ميلك شيك سنيكرز</h3><p>Milkshake Snickers</p><div class="price">320 ل.س</div><button class="add-btn" onclick="addToCart('ميلك شيك سنيكرز', 320)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>شيك ديلي دوز</h3><p>Daily Dose Shake</p><div class="price">320 ل.س</div><button class="add-btn" onclick="addToCart('شيك ديلي دوز', 320)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>ميلك شيك لوتس</h3><p>Milkshake Lotus</p><div class="price">320 ل.س</div><button class="add-btn" onclick="addToCart('ميلك شيك لوتس', 320)">+ أضف للسلة</button></div></article>
@@ -405,12 +402,10 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>ميلك شيك فانيلا</h3><p>Milkshake Vanilla</p><div class="price">320 ل.س</div><button class="add-btn" onclick="addToCart('ميلك شيك فانيلا', 320)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>ميلك شيك نوتيلا</h3><p>Milkshake Nutella</p><div class="price">350 ل.س</div><button class="add-btn" onclick="addToCart('ميلك شيك نوتيلا', 350)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>ميلك شيك شوكولا</h3><p>Milkshake Chocolate</p><div class="price">320 ل.س</div><button class="add-btn" onclick="addToCart('ميلك شيك شوكولا', 320)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>بلو بينا</h3><p>Blue Pina</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('بلو بينا', 340)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>بيناكولادا دوز</h3><p>Pinacolada Dose</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('بيناكولادا دوز', 340)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>بلوكلادا</h3><p>Bluecolada</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('بلوكلادا', 300)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>بيناكولادا فراولة</h3><p>Pinacolada Strawberry</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('بيناكولادا فراولة', 340)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>موز وحليب مانغا</h3><p>Banana Milk Mango</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('موز وحليب مانغا', 340)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>تانغو مانغو</h3><p>Tango Mango</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('تانغو مانغو', 340)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>فواكه</h3><p>Fruits Cocktail</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('فواكه', 340)">+ أضف للسلة</button></div></article>
@@ -423,7 +418,6 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>أفوكادو</h3><p>Avocado</p><div class="price">420 ل.س</div><button class="add-btn" onclick="addToCart('أفوكادو', 420)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>موز وحليب شوكولا</h3><p>Banana Milk Chocolate</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('موز وحليب شوكولا', 340)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>موز وحليب وفريز</h3><p>Banana Milk Strawberry</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('موز وحليب وفريز', 340)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>عصير كيوي وأناناس</h3><p>Kiwi & Pineapple Juice</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('عصير كيوي وأناناس', 340)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>عصير كيوي</h3><p>Kiwi Juice</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('عصير كيوي', 340)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>عصير ليمون وبرتقال</h3><p>Lemon & Orange Juice</p><div class="price">280 ل.س</div><button class="add-btn" onclick="addToCart('عصير ليمون وبرتقال', 280)">+ أضف للسلة</button></div></article>
@@ -438,23 +432,18 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>عصير توت</h3><p>Berry Juice</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('عصير توت', 340)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="cold"><div class="product-info"><h3>عصير فريز</h3><p>Strawberry Juice</p><div class="price">340 ل.س</div><button class="add-btn" onclick="addToCart('عصير فريز', 340)">+ أضف للسلة</button></div></article>
 
-
         <!-- ======================= الحلويات ======================= -->
-        
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>بان كيك</h3><p>Pancake</p><div class="price">350 ل.س</div><button class="add-btn" onclick="addToCart('بان كيك', 350)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>بان كيك فواكه</h3><p>Pancake Fruits</p><div class="price">420 ل.س</div><button class="add-btn" onclick="addToCart('بان كيك فواكه', 420)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>بان كيك ميكس</h3><p>Pancake Mix</p><div class="price">400 ل.س</div><button class="add-btn" onclick="addToCart('بان كيك ميكس', 400)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>بان كيك لوتس</h3><p>Pancake Lotus</p><div class="price">350 ل.س</div><button class="add-btn" onclick="addToCart('بان كيك لوتس', 350)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>وافل بستاشيو</h3><p>Waffle Pistachio</p><div class="price">420 ل.س</div><button class="add-btn" onclick="addToCart('وافل بستاشيو', 420)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>وافل فواكه</h3><p>Waffle Fruits</p><div class="price">480 ل.س</div><button class="add-btn" onclick="addToCart('وافل فواكه', 480)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>وافل ميكس</h3><p>Waffle Mix</p><div class="price">420 ل.س</div><button class="add-btn" onclick="addToCart('وافل ميكس', 420)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>وافل لوتس</h3><p>Waffle Lotus</p><div class="price">420 ل.س</div><button class="add-btn" onclick="addToCart('وافل لوتس', 420)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>وافل شوكلا</h3><p>Waffle Chocolate</p><div class="price">420 ل.س</div><button class="add-btn" onclick="addToCart('وافل شوكلا', 420)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>براونيز</h3><p>Brownies</p><div class="price">380 ل.س</div><button class="add-btn" onclick="addToCart('براونيز', 380)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>براونيز فوتشيني</h3><p>Brownies Fettuccine</p><div class="price">520 ل.س</div><button class="add-btn" onclick="addToCart('براونيز فوتشيني', 520)">+ أضف للسلة</button></div></article>
-
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>كريب فوتشيني بستاشيو</h3><p>Crepe Fettuccine Pistachio</p><div class="price">520 ل.س</div><button class="add-btn" onclick="addToCart('كريب فوتشيني بستاشيو', 520)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>كريب ميكس</h3><p>Crepe Mix</p><div class="price">450 ل.س</div><button class="add-btn" onclick="addToCart('كريب ميكس', 450)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>كريب بستاشيو</h3><p>Crepe Pistachio</p><div class="price">450 ل.س</div><button class="add-btn" onclick="addToCart('كريب بستاشيو', 450)">+ أضف للسلة</button></div></article>
@@ -463,9 +452,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>كريب لوتس</h3><p>Crepe Lotus</p><div class="price">450 ل.س</div><button class="add-btn" onclick="addToCart('كريب لوتس', 450)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="dessert"><div class="product-info"><h3>كريب شوكولا</h3><p>Crepe Chocolate</p><div class="price">450 ل.س</div><button class="add-btn" onclick="addToCart('كريب شوكولا', 450)">+ أضف للسلة</button></div></article>
 
-
         <!-- ======================= الأراكيل ======================= -->
-        
         <article class="product reveal" data-category="shisha"><div class="product-info"><h3>أركيلة لوف</h3><p>Shisha Love</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('أركيلة لوف', 300)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="shisha"><div class="product-info"><h3>أركيلة عنب ونعنع</h3><p>Shisha Grape & Mint</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('أركيلة عنب ونعنع', 300)">+ أضف للسلة</button></div></article>
         <article class="product reveal" data-category="shisha"><div class="product-info"><h3>أركيلة بولو</h3><p>Shisha Bolu</p><div class="price">300 ل.س</div><button class="add-btn" onclick="addToCart('أركيلة بولو', 300)">+ أضف للسلة</button></div></article>
@@ -515,7 +502,6 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       <p>⏰ <strong>ساعات العمل:</strong> 9 صباحًا - 12 منتصف الليل</p>
     </div>
 
-    <!-- أيقونات السوشال ميديا والتواصل -->
     <div style="display:flex; justify-content:center; gap:25px; margin-bottom: 25px; margin-top: 15px;">
       <a href="https://wa.me/963962375457" target="_blank" title="تواصل معنا عبر واتساب">
         <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width:35px; height:35px; transition:.3s; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.3));">
@@ -541,6 +527,14 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       <button class="close-cart" onclick="toggleCart()">×</button>
     </div>
     <div id="cart-items"></div>
+
+    <!-- اختيار الطاولة (مرتبط بالكاشير و QR) -->
+    <div class="table-select-box" id="table-select-wrapper" style="display:none;">
+      <select id="cart-table-select">
+        <option value="">اختر رقم الطاولة...</option>
+      </select>
+    </div>
+
     <div class="cart-total">
       <span>المجموع</span>
       <span id="cart-total" style="direction:rtl;">0 ل.س</span>
@@ -554,39 +548,181 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
 </div> <!-- نهاية الغلاف الكامل -->
 
 <script>
-  // ---------------- 1. نظام حماية الشبكة (IP Tracking) ----------------
-  const cafeIP = "109.224.242.121"; 
+  const supabaseUrl = 'https://zvwhiqjmydyyswwqmcwy.supabase.co';
+  const supabaseKey = 'sb_publishable_w0-bscTi4h8ExH_BQD_3Ig_tGUx7qUX';
+  const dbClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+  const restaurantId = 'eb399736-4a86-4109-86c5-798720f6d242';
 
-  fetch('https://api.ipify.org?format=json')
-      .then(response => response.json())
-      .then(data => {
-          if (data.ip === cafeIP) {
-              document.getElementById('main-website-content').style.display = 'block';
-              document.getElementById('access-denied').style.display = 'none';
-              initSystem(); 
-          } else {
-              document.getElementById('access-denied').style.display = 'flex';
+  const urlParams = new URLSearchParams(window.location.search);
+  const tableFromQR = urlParams.get('table');
+
+  window.cart = [];
+
+  // ---------------- 1. فحص إعدادات الكاشير (الشبكة + البيانات) ----------------
+  async function checkAccessAndInit() {
+      // تشغيل الموقع مباشرة بدون حظر
+      initSystem();
+
+      try {
+          // التحقق هل تتبع الواي فاي مفعل من لوحة الكاشير أم متوقف
+          const { data: settings } = await dbClient
+              .from('restaurant_settings')
+              .select('*')
+              .eq('restaurant_id', restaurantId)
+              .single();
+
+          if (settings && settings.wifi_tracking_enabled && settings.allowed_ip) {
+              const res = await fetch('https://api.ipify.org?format=json');
+              const ipData = await res.json();
+              if (ipData.ip !== settings.allowed_ip.trim()) {
+                  document.getElementById('main-website-content').style.display = 'none';
+                  document.getElementById('access-denied').style.display = 'flex';
+                  return;
+              }
           }
-      })
-      .catch(error => {
-          console.error("فشل في التحقق من الشبكة:", error);
-          document.getElementById('main-website-content').style.display = 'block';
-          initSystem();
-      });
+      } catch (err) {
+          // في حال عدم وجود إعدادات أو ضعف الإنترنت يبقى الموقع مفتوحاً
+          console.log("تتبع الواي فاي غير مفعل، الموقع متاح للجميع.");
+      }
 
-  // ---------------- 2. التشغيل الأساسي والربط مع Supabase ----------------
+      // جلب التحديثات الحية من لوحة الكاشير
+      loadDynamicPromosAndEvents();
+      loadDynamicMenuAndStock();
+      loadDynamicTables();
+  }
+
+  // ---------------- 2. جلب الإعلانات والفعاليات من الكاشير ----------------
+  async function loadDynamicPromosAndEvents() {
+      try {
+          const { data: promos } = await dbClient
+              .from('promotions')
+              .select('*')
+              .eq('restaurant_id', restaurantId)
+              .eq('is_active', true)
+              .order('created_at', { ascending: false });
+
+          if (promos && promos.length > 0) {
+              document.getElementById('dynamic-promo-marquee').textContent = promos.map(p => p.title).join('  ✦  ');
+          }
+
+          const { data: events } = await dbClient
+              .from('events')
+              .select('*')
+              .eq('restaurant_id', restaurantId)
+              .order('created_at', { ascending: false });
+
+          if (events && events.length > 0) {
+              document.getElementById('dynamic-events-marquee').textContent = events.map(e => `${e.event_title} (${e.description || e.event_date})`).join('  🎉  ');
+          }
+      } catch (e) { console.error(e); }
+  }
+
+  // ---------------- 3. ربط عناصر المنيو والمخزون بالكاشير ----------------
+  const categoryMap = {
+      'مشروبات ساخنة': 'hot',
+      'المشروبات الساخنة': 'hot',
+      'hot': 'hot',
+      'مشروبات باردة': 'cold',
+      'المشروبات الباردة': 'cold',
+      'cold': 'cold',
+      'حلويات': 'dessert',
+      'الحلويات': 'dessert',
+      'dessert': 'dessert',
+      'أراكيل': 'shisha',
+      'الأراكيل': 'shisha',
+      'اراكيل': 'shisha',
+      'shisha': 'shisha'
+  };
+
+  async function loadDynamicMenuAndStock() {
+      try {
+          const { data: dbItems } = await dbClient
+              .from('menu_items')
+              .select('*')
+              .eq('restaurant_id', restaurantId)
+              .order('created_at', { ascending: true });
+
+          if (!dbItems || dbItems.length === 0) return;
+
+          const productsContainer = document.getElementById('products');
+          const existingCards = Array.from(productsContainer.querySelectorAll('.product'));
+
+          dbItems.forEach(item => {
+              const existingCard = existingCards.find(card => {
+                  const title = card.querySelector('h3')?.textContent.trim();
+                  return title === item.name.trim();
+              });
+
+              const mappedCat = categoryMap[item.category.trim()] || item.category.trim();
+
+              if (existingCard) {
+                  // تحديث السعر وحالة التوفر للصنف الموجود مسبقاً
+                  const priceEl = existingCard.querySelector('.price');
+                  const btnEl = existingCard.querySelector('.add-btn');
+                  if (priceEl) priceEl.textContent = `${item.price} ل.س`;
+                  if (btnEl) {
+                      if (!item.is_available) {
+                          btnEl.textContent = 'نفد حالياً ✖';
+                          btnEl.classList.add('disabled-btn');
+                          btnEl.disabled = true;
+                          btnEl.onclick = null;
+                      } else {
+                          btnEl.textContent = '+ أضف للسلة';
+                          btnEl.classList.remove('disabled-btn');
+                          btnEl.disabled = false;
+                          btnEl.setAttribute('onclick', `addToCart('${item.name.replace(/'/g, "\\'")}', ${item.price})`);
+                      }
+                  }
+              } else {
+                  // إضافة الصنف الجديد المضاف من لوحة الكاشير
+                  const newArticle = document.createElement('article');
+                  newArticle.className = 'product reveal visible';
+                  newArticle.dataset.category = mappedCat;
+                  const safeName = item.name.replace(/'/g, "\\'");
+
+                  newArticle.innerHTML = `
+                      <div class="product-info">
+                          ${item.image_url ? `<img src="${item.image_url}" style="width:100%; height:140px; object-fit:cover; border-radius:14px; margin-bottom:12px;">` : ''}
+                          <h3>${item.name}</h3>
+                          <p>${item.description || item.category}</p>
+                          <div class="price">${item.price} ل.س</div>
+                          ${item.is_available 
+                              ? `<button class="add-btn" onclick="addToCart('${safeName}', ${item.price})">+ أضف للسلة</button>`
+                              : `<button class="add-btn disabled-btn" disabled>نفد حالياً ✖</button>`
+                          }
+                      </div>
+                  `;
+                  productsContainer.appendChild(newArticle);
+              }
+          });
+      } catch (e) { console.error(e); }
+  }
+
+  // ---------------- 4. جلب الطاولات من الكاشير ----------------
+  async function loadDynamicTables() {
+      try {
+          const { data: tables } = await dbClient
+              .from('restaurant_tables')
+              .select('*')
+              .eq('restaurant_id', restaurantId)
+              .order('created_at', { ascending: true });
+
+          const wrapper = document.getElementById('table-select-wrapper');
+          const select = document.getElementById('cart-table-select');
+
+          if (tables && tables.length > 0) {
+              wrapper.style.display = 'block';
+              select.innerHTML = '<option value="">اختر رقم الطاولة...</option>' + 
+                  tables.map(t => `<option value="${t.table_number}" ${tableFromQR === t.table_number ? 'selected' : ''}>${t.table_number}</option>`).join('');
+          } else if (tableFromQR) {
+              wrapper.style.display = 'block';
+              select.innerHTML = `<option value="${tableFromQR}" selected>طاولة ${tableFromQR}</option>`;
+          }
+      } catch (e) { console.error(e); }
+  }
+
+  // ---------------- 5. التشغيل الأساسي للسلة والطلبات ----------------
   function initSystem() {
-      const supabaseUrl = 'https://zvwhiqjmydyyswwqmcwy.supabase.co';
-      const supabaseKey = 'sb_publishable_w0-bscTi4h8ExH_BQD_3Ig_tGUx7qUX';
-      const dbClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-      const restaurantId = 'eb399736-4a86-4109-86c5-798720f6d242';
-
-      // سحب رقم الطاولة من الرابط إن وُجد
-      const urlParams = new URLSearchParams(window.location.search);
-      const tableFromQR = urlParams.get('table');
-
-      window.cart = [];
-
       window.addToCart = function(name, price) {
         const existing = cart.find(item => item.name === name);
         if (existing) {
@@ -598,7 +734,6 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         showToast();
       };
 
-      // دالة لتحديث الملاحظات الخاصة بكل منتج داخل السلة
       window.updateNote = function(index, value) {
           if (cart[index]) {
               cart[index].note = value;
@@ -650,16 +785,13 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         });
       };
 
-      // التعديل الجديد على دالة الدفع (Checkout)
       window.checkout = async function() {
         const btn = document.getElementById('submit-order-btn');
-
-        // تحديد رقم الطاولة، إذا لم يمسح الكود يعتبر الطلب "غير معروف"
-        const finalTableNumber = tableFromQR ? tableFromQR : 'غير معروف';
+        const selectedTable = document.getElementById('cart-table-select')?.value;
+        const finalTableNumber = selectedTable || tableFromQR || 'غير معروف';
 
         if (!cart.length) return alert('السلة فارغة!');
 
-        // إرفاق الملاحظات مع كل منتج ليقرأها الكاشير
         const orderItems = cart.map(item => { 
             return { name: item.name, qty: item.qty, note: item.note || '' }; 
         });
@@ -669,7 +801,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         btn.style.opacity = '0.7';
 
         try {
-            const { data, error } = await dbClient
+            const { error } = await dbClient
                 .from('orders')
                 .insert([{
                     restaurant_id: restaurantId,
@@ -683,7 +815,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
             if (finalTableNumber === 'غير معروف') {
                 alert('تم إرسال طلبك للكاشير بنجاح! ☕');
             } else {
-                alert('تم إرسال طلبك للكاشير بنجاح! ☕ سينزل طلبك قريباً للطاولة رقم ' + finalTableNumber);
+                alert('تم إرسال طلبك للكاشير بنجاح! ☕ سينزل طلبك قريباً للطاولة: ' + finalTableNumber);
             }
             
             cart = [];
@@ -712,6 +844,9 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       updateCart();
   }
+
+  // بدء التشغيل فور فتح الصفحة
+  checkAccessAndInit();
 </script>
 
 </body>
