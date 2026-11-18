@@ -528,12 +528,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
     </div>
     <div id="cart-items"></div>
 
-    <!-- اختيار الطاولة (مرتبط بالكاشير و QR) -->
-    <div class="table-select-box" id="table-select-wrapper" style="display:none;">
-      <select id="cart-table-select">
-        <option value="">اختر رقم الطاولة...</option>
-      </select>
-    </div>
+    <!-- يتم تحديد رقم الطاولة تلقائياً من رمز QR أو كـ "زبون عام" عند الطلب من الرابط مباشرة -->
 
     <div class="cart-total">
       <span>المجموع</span>
@@ -554,7 +549,8 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
   const restaurantId = 'eb399736-4a86-4109-86c5-798720f6d242';
 
   const urlParams = new URLSearchParams(window.location.search);
-  const tableFromQR = urlParams.get('table');
+  const rawTableParam = urlParams.get('table');
+  const tableFromQR = (rawTableParam && rawTableParam.trim() !== '') ? rawTableParam.trim() : null;
 
   window.cart = [];
 
@@ -569,7 +565,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
               .from('restaurant_settings')
               .select('*')
               .eq('restaurant_id', restaurantId)
-              .single();
+              .maybeSingle();
 
           if (settings && settings.wifi_tracking_enabled && settings.allowed_ip) {
               const res = await fetch('https://api.ipify.org?format=json');
@@ -586,9 +582,9 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       }
 
       // جلب التحديثات الحية من لوحة الكاشير
-      loadDynamicPromosAndEvents();
-      loadDynamicMenuAndStock();
-      loadDynamicTables();
+      await loadDynamicPromosAndEvents();
+      await loadDynamicMenuAndStock();
+      setupRealtimeSubscriptions();
   }
 
   // ---------------- 2. جلب الإعلانات والفعاليات من الكاشير ----------------
@@ -601,24 +597,41 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
               .eq('is_active', true)
               .order('created_at', { ascending: false });
 
-          if (promos && promos.length > 0) {
-              document.getElementById('dynamic-promo-marquee').textContent = promos.map(p => p.title).join('  ✦  ');
+          const promoEl = document.getElementById('dynamic-promo-marquee');
+          if (promoEl) {
+              if (promos && promos.length > 0) {
+                  promoEl.textContent = promos.map(p => p.title).join('  ✦  ');
+              } else {
+                  promoEl.textContent = 'أهلاً بكم في مقهى ديلي دوز! استمتعوا بتجربة أشهى أنواع القهوة والمشروبات ... خصومات خاصة على قائمة الفطور قريباً!';
+              }
           }
 
           const { data: events } = await dbClient
               .from('events')
               .select('*')
               .eq('restaurant_id', restaurantId)
-              .order('created_at', { ascending: false });
+              .order('event_date', { ascending: false });
 
-          if (events && events.length > 0) {
-              document.getElementById('dynamic-events-marquee').textContent = events.map(e => `${e.event_title} (${e.description || e.event_date})`).join('  🎉  ');
+          const eventsEl = document.getElementById('dynamic-events-marquee');
+          if (eventsEl) {
+              if (events && events.length > 0) {
+                  eventsEl.textContent = events.map(e => `${e.event_title} (${e.description || e.event_date || ''})`).join('  🎉  ');
+              } else {
+                  eventsEl.textContent = 'ترقبوا تغطيتنا لأهم المباريات الرياضية على شاشاتنا ... وسهرات موسيقية مميزة في عطلة نهاية الأسبوع!';
+              }
           }
       } catch (e) { console.error(e); }
   }
 
-  // ---------------- 3. ربط عناصر المنيو والمخزون بالكاشير ----------------
-  const categoryMap = {
+  // ---------------- 3. ربط عناصر المنيو والمخزون بالكاشير (جدول products + categories) ----------------
+  const categoryIdToCode = {
+      '11111111-1111-1111-1111-111111111111': 'hot',
+      '22222222-2222-2222-2222-222222222222': 'cold',
+      '33333333-3333-3333-3333-333333333333': 'dessert',
+      '44444444-4444-4444-4444-444444444444': 'shisha'
+  };
+
+  const categoryNameMap = {
       'مشروبات ساخنة': 'hot',
       'المشروبات الساخنة': 'hot',
       'hot': 'hot',
@@ -634,34 +647,80 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       'shisha': 'shisha'
   };
 
+  function normalizeArabicText(str) {
+      return (str || '')
+          .replace(/\s+/g, ' ')
+          .replace(/&/g, 'و')
+          .trim()
+          .toLowerCase();
+  }
+
+  function extractNamesFromDbProduct(rawName) {
+      const full = (rawName || '').trim();
+      if (full.includes('/')) {
+          const parts = full.split('/');
+          const enPart = parts[0].trim();
+          const arPart = parts.slice(1).join('/').trim();
+          return { arName: arPart || full, enName: enPart, fullName: full };
+      }
+      return { arName: full, enName: '', fullName: full };
+  }
+
   async function loadDynamicMenuAndStock() {
       try {
-          const { data: dbItems } = await dbClient
-              .from('menu_items')
-              .select('*')
-              .eq('restaurant_id', restaurantId)
-              .order('created_at', { ascending: true });
+          const [{ data: dbCategories }, { data: dbItems }] = await Promise.all([
+              dbClient.from('categories').select('id, name').eq('restaurant_id', restaurantId),
+              dbClient.from('products').select('*').eq('restaurant_id', restaurantId).order('created_at', { ascending: true })
+          ]);
 
           if (!dbItems || dbItems.length === 0) return;
 
+          const catLookup = { ...categoryIdToCode };
+          const catArabicTitle = {};
+          if (dbCategories && dbCategories.length > 0) {
+              dbCategories.forEach(c => {
+                  const trimmed = (c.name || '').trim();
+                  catArabicTitle[c.id] = trimmed;
+                  if (categoryNameMap[trimmed]) {
+                      catLookup[c.id] = categoryNameMap[trimmed];
+                  }
+              });
+          }
+
           const productsContainer = document.getElementById('products');
+          // إزالة البطاقات المضافة ديناميكياً في تحديث سابق لمنع التكرار عند التحديث اللحظي
+          productsContainer.querySelectorAll('.product[data-dynamic="true"]').forEach(el => el.remove());
+
           const existingCards = Array.from(productsContainer.querySelectorAll('.product'));
 
           dbItems.forEach(item => {
+              const { arName, enName, fullName } = extractNamesFromDbProduct(item.name);
+              const normAr = normalizeArabicText(arName);
+              const normEn = normalizeArabicText(enName);
+              const normFull = normalizeArabicText(fullName);
+
               const existingCard = existingCards.find(card => {
-                  const title = card.querySelector('h3')?.textContent.trim();
-                  return title === item.name.trim();
+                  const cardTitle = normalizeArabicText(card.querySelector('h3')?.textContent);
+                  const cardSub = normalizeArabicText(card.querySelector('p')?.textContent);
+                  return (
+                      cardTitle === normAr ||
+                      cardTitle === normFull ||
+                      (normEn && cardSub === normEn)
+                  );
               });
 
-              const mappedCat = categoryMap[item.category.trim()] || item.category.trim();
+              const mappedCat = catLookup[item.category_id] || categoryNameMap[(item.category || '').trim()] || 'hot';
+              const numericPrice = Number(item.price) || 0;
+              const isAvail = item.is_available !== false;
 
               if (existingCard) {
-                  // تحديث السعر وحالة التوفر للصنف الموجود مسبقاً
+                  // تحديث السعر وحالة التوفر للصنف الموجود مسبقاً مع الحفاظ على تصميمه وتسميته
+                  const displayArName = existingCard.querySelector('h3')?.textContent.trim() || arName;
                   const priceEl = existingCard.querySelector('.price');
                   const btnEl = existingCard.querySelector('.add-btn');
-                  if (priceEl) priceEl.textContent = `${item.price} ل.س`;
+                  if (priceEl) priceEl.textContent = `${numericPrice} ل.س`;
                   if (btnEl) {
-                      if (!item.is_available) {
+                      if (!isAvail) {
                           btnEl.textContent = 'نفد حالياً ✖';
                           btnEl.classList.add('disabled-btn');
                           btnEl.disabled = true;
@@ -670,24 +729,28 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
                           btnEl.textContent = '+ أضف للسلة';
                           btnEl.classList.remove('disabled-btn');
                           btnEl.disabled = false;
-                          btnEl.setAttribute('onclick', `addToCart('${item.name.replace(/'/g, "\\'")}', ${item.price})`);
+                          const safeName = displayArName.replace(/'/g, "\\'");
+                          btnEl.setAttribute('onclick', `addToCart('${safeName}', ${numericPrice})`);
                       }
                   }
               } else {
-                  // إضافة الصنف الجديد المضاف من لوحة الكاشير
+                  // إضافة الصنف الجديد المضاف من لوحة الكاشير بنفس تصميم البطاقات
                   const newArticle = document.createElement('article');
                   newArticle.className = 'product reveal visible';
                   newArticle.dataset.category = mappedCat;
-                  const safeName = item.name.replace(/'/g, "\\'");
+                  newArticle.dataset.dynamic = 'true';
+                  const displayArName = arName || fullName;
+                  const displaySub = enName || catArabicTitle[item.category_id] || '';
+                  const safeName = displayArName.replace(/'/g, "\\'");
 
                   newArticle.innerHTML = `
                       <div class="product-info">
                           ${item.image_url ? `<img src="${item.image_url}" style="width:100%; height:140px; object-fit:cover; border-radius:14px; margin-bottom:12px;">` : ''}
-                          <h3>${item.name}</h3>
-                          <p>${item.description || item.category}</p>
-                          <div class="price">${item.price} ل.س</div>
-                          ${item.is_available 
-                              ? `<button class="add-btn" onclick="addToCart('${safeName}', ${item.price})">+ أضف للسلة</button>`
+                          <h3>${displayArName}</h3>
+                          <p>${displaySub}</p>
+                          <div class="price">${numericPrice} ل.س</div>
+                          ${isAvail 
+                              ? `<button class="add-btn" onclick="addToCart('${safeName}', ${numericPrice})">+ أضف للسلة</button>`
                               : `<button class="add-btn disabled-btn" disabled>نفد حالياً ✖</button>`
                           }
                       </div>
@@ -695,40 +758,47 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
                   productsContainer.appendChild(newArticle);
               }
           });
+
+          // تطبيق الفلتر الحالي بعد التحديث
+          const activeCatBtn = document.querySelector('.category.active');
+          if (activeCatBtn) {
+              const onclickAttr = activeCatBtn.getAttribute('onclick') || '';
+              const match = onclickAttr.match(/filterMenu\('([^']+)'/);
+              if (match && match[1]) {
+                  const currentCat = match[1];
+                  document.querySelectorAll('.product').forEach(product => {
+                      product.style.display = currentCat === 'all' || product.dataset.category === currentCat ? 'flex' : 'none';
+                  });
+              }
+          }
       } catch (e) { console.error(e); }
   }
 
-  // ---------------- 4. جلب الطاولات من الكاشير ----------------
-  async function loadDynamicTables() {
-      try {
-          const { data: tables } = await dbClient
-              .from('restaurant_tables')
-              .select('*')
-              .eq('restaurant_id', restaurantId)
-              .order('created_at', { ascending: true });
-
-          const wrapper = document.getElementById('table-select-wrapper');
-          const select = document.getElementById('cart-table-select');
-
-          if (tables && tables.length > 0) {
-              wrapper.style.display = 'block';
-              select.innerHTML = '<option value="">اختر رقم الطاولة...</option>' + 
-                  tables.map(t => `<option value="${t.table_number}" ${tableFromQR === t.table_number ? 'selected' : ''}>${t.table_number}</option>`).join('');
-          } else if (tableFromQR) {
-              wrapper.style.display = 'block';
-              select.innerHTML = `<option value="${tableFromQR}" selected>طاولة ${tableFromQR}</option>`;
-          }
-      } catch (e) { console.error(e); }
+  // ---------------- 4. الاستماع اللحظي لتحديثات الكاشير (Supabase Realtime) ----------------
+  function setupRealtimeSubscriptions() {
+      dbClient
+          .channel('menu_live_sync')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+              loadDynamicMenuAndStock();
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'promotions' }, () => {
+              loadDynamicPromosAndEvents();
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+              loadDynamicPromosAndEvents();
+          })
+          .subscribe();
   }
 
   // ---------------- 5. التشغيل الأساسي للسلة والطلبات ----------------
   function initSystem() {
       window.addToCart = function(name, price) {
+        const numericPrice = Number(price) || 0;
         const existing = cart.find(item => item.name === name);
         if (existing) {
           existing.qty++;
         } else {
-          cart.push({name, price, qty: 1, note: ''});
+          cart.push({name, price: numericPrice, qty: 1, note: ''});
         }
         updateCart();
         showToast();
@@ -757,7 +827,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
                   <button onclick="removeItem(${index})">✕</button>
                 </span>
               </div>
-              <input type="text" class="item-note" placeholder="ملاحظات (مثلاً: سكر زيادة، بارد جداً...)" value="${item.note || ''}" onchange="updateNote(${index}, this.value)">
+              <input type="text" class="item-note" placeholder="ملاحظات (مثلاً: سكر زيادة، بارد جداً...)" value="${item.note || ''}" oninput="updateNote(${index}, this.value)" onchange="updateNote(${index}, this.value)">
             </div>
           `).join('') : '<p style="text-align:center; color:#887b68; padding:10px;">السلة فارغة حالياً</p>';
       };
@@ -787,13 +857,19 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
 
       window.checkout = async function() {
         const btn = document.getElementById('submit-order-btn');
-        const selectedTable = document.getElementById('cart-table-select')?.value;
-        const finalTableNumber = selectedTable || tableFromQR || 'غير معروف';
+        // إذا دخل الزبون عبر QR Code يأخذ رقم الطاولة تلقائياً، وإذا دخل من الرابط مباشرة يسجل "زبون عام"
+        const finalTableNumber = tableFromQR ? String(tableFromQR) : 'زبون عام';
 
         if (!cart.length) return alert('السلة فارغة!');
 
+        const totalOrderPrice = cart.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.qty) || 1)), 0);
         const orderItems = cart.map(item => { 
-            return { name: item.name, qty: item.qty, note: item.note || '' }; 
+            return { 
+                name: item.name, 
+                price: Number(item.price) || 0,
+                qty: Number(item.qty) || 1, 
+                note: item.note || '' 
+            }; 
         });
 
         btn.innerText = 'جاري إرسال الطلب...';
@@ -801,18 +877,32 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         btn.style.opacity = '0.7';
 
         try {
-            const { error } = await dbClient
+            let { error } = await dbClient
                 .from('orders')
                 .insert([{
                     restaurant_id: restaurantId,
                     table_number: finalTableNumber,
                     items: orderItems,
+                    total_price: totalOrderPrice,
                     status: 'pending'
                 }]);
 
+            // حماية إضافية: إذا لم يكن عمود total_price مضافاً بعد في القاعدة، يعيد الإرسال بدونه فوراً حتى لا يتعطل طلب الزبون
+            if (error && error.message && error.message.includes('total_price')) {
+                const retry = await dbClient
+                    .from('orders')
+                    .insert([{
+                        restaurant_id: restaurantId,
+                        table_number: finalTableNumber,
+                        items: orderItems,
+                        status: 'pending'
+                    }]);
+                error = retry.error;
+            }
+
             if (error) throw error;
 
-            if (finalTableNumber === 'غير معروف') {
+            if (finalTableNumber === 'زبون عام') {
                 alert('تم إرسال طلبك للكاشير بنجاح! ☕');
             } else {
                 alert('تم إرسال طلبك للكاشير بنجاح! ☕ سينزل طلبك قريباً للطاولة: ' + finalTableNumber);
@@ -848,6 +938,5 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
   // بدء التشغيل فور فتح الصفحة
   checkAccessAndInit();
 </script>
-
 </body>
 </html>
