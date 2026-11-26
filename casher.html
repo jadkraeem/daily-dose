@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Dose | Cashier & Admin Dashboard</title>
+<link rel="manifest" href="app-casher.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<meta name="theme-color" content="#064e3b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="كاشير Daily Dose">
+<script src="pwa.js" defer></script>
 
 <!-- استدعاء مكتبة Supabase والخطوط -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -569,6 +578,7 @@ button { font-family: inherit; cursor: pointer; }
     let categoriesMap = {};
     let cachedProducts = [];
     let currentEditProductId = null; // متغير لحفظ الـ ID عند التعديل
+    window.__printJobs = {}; // بيانات الطباعة لكل طلب (آمنة ضد حقن الأكواد)
 
     const alertSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
@@ -657,7 +667,7 @@ button { font-family: inherit; cursor: pointer; }
                         let noteHTML = item.note ? `<br><small style="color:#c9a45c; font-weight:bold;">ملاحظة: ${esc(item.note)}</small>` : '';
                         let priceHTML = itemPrice > 0 ? ` <small style="color:#666;">(${itemPrice * qty} ل.س)</small>` : '';
                         itemsText += `<div style="margin-bottom: 8px; border-bottom: 1px dashed #eee; padding-bottom: 4px;">🔹 ${esc(item.name)} <strong style="color:var(--green);">(الكمية: ${qty})</strong>${priceHTML}${noteHTML}</div>`;
-                        itemsForPrint += `<div>${esc(item.name)} x${qty} ${itemPrice > 0 ? '- ' + (itemPrice * qty) + ' ل.س' : ''} ${item.note ? '('+item.note+')' : ''}</div>`;
+                        itemsForPrint += `<div>${esc(item.name)} x${qty} ${itemPrice > 0 ? '- ' + (itemPrice * qty) + ' ل.س' : ''} ${item.note ? '('+esc(item.note)+')' : ''}</div>`;
                     });
                     if (calculatedTotal === 0 && sumFromItems > 0) {
                         calculatedTotal = sumFromItems;
@@ -670,9 +680,10 @@ button { font-family: inherit; cursor: pointer; }
                 }
 
                 const time = new Date(order.created_at).toLocaleTimeString('ar-SY', {hour: '2-digit', minute:'2-digit'});
-                const safeItemsForPrint = encodeURIComponent(itemsForPrint);
-                const tableHeaderLabel = formatTableLabel(order.table_number);
+                const tableHeaderLabel = esc(formatTableLabel(order.table_number));
                 const printTableLabel = (order.table_number && order.table_number !== 'غير معروف' && order.table_number !== 'زبون عام') ? `الطاولة: ${order.table_number}` : 'الطلب: زبون عام';
+                // نحفظ بيانات الطباعة في خريطة بمفتاح معرّف الطلب (UUID آمن) بدل حقنها داخل onclick
+                window.__printJobs[order.id] = { table: printTableLabel, time, items: itemsForPrint };
 
                 container.innerHTML += `
                     <div class="card" id="order-${order.id}">
@@ -685,7 +696,7 @@ button { font-family: inherit; cursor: pointer; }
                         </div>
                         <div class="actions-row">
                             ${(statusFilter === 'pending' || statusFilter === 'preparing') ? `<button class="action-btn btn-ready" onclick="markReady('${order.id}')">✔️ جاهز</button>` : ''}
-                            <button class="action-btn btn-print" onclick="printReceipt('${printTableLabel}', '${time}', '${safeItemsForPrint}')">🖨️ طباعة</button>
+                            <button class="action-btn btn-print" onclick="printReceipt('${order.id}')">🖨️ طباعة</button>
                             <button class="action-btn btn-danger" style="flex:0.4;" onclick="deleteOrder('${order.id}', '${order.status}')">🗑️ ${order.status === 'cancelled' ? 'حذف نهائي' : 'إلغاء'}</button>
                         </div>
                     </div>
@@ -726,8 +737,10 @@ button { font-family: inherit; cursor: pointer; }
         loadOrders();
     };
 
-    window.printReceipt = function(tableLabel, time, encodedItems) {
-        const items = decodeURIComponent(encodedItems);
+    window.printReceipt = function(orderId) {
+        const job = window.__printJobs[orderId];
+        if (!job) return;
+        // رقم الطاولة والوقت نهرّبهما (قد يحتوي رقم الطاولة على نص من الزبون)؛ عناصر الطلب مُهرّبة مسبقاً أثناء بنائها
         const printWindow = window.open('', '_blank', 'width=300,height=500');
         printWindow.document.write(`
             <html dir="rtl">
@@ -743,8 +756,8 @@ button { font-family: inherit; cursor: pointer; }
             </head>
             <body>
                 <h2>Daily Dose ☕</h2>
-                <div class="table-num">${tableLabel}<br><span style="font-size:14px; font-weight:normal;">الوقت: ${time}</span></div>
-                <div class="items">${items}</div>
+                <div class="table-num">${esc(job.table)}<br><span style="font-size:14px; font-weight:normal;">الوقت: ${esc(job.time)}</span></div>
+                <div class="items">${job.items}</div>
                 <div class="footer">شكراً لزيارتكم ديلي دوز!</div>
             </body>
             </html>

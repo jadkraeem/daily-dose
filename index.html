@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Dose | Cafe & More</title>
+<link rel="manifest" href="app-menu.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<meta name="theme-color" content="#064e3b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily Dose">
+<script src="pwa.js" defer></script>
 
 <!-- استدعاء مكتبة Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -764,7 +773,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
                           <p>${esc(displaySub)}</p>
                           <div class="price">${numericPrice} ل.س</div>
                           ${isAvail 
-                              ? `<button class="add-btn" onclick="addToCart('${safeName}', ${numericPrice})">+ أضف للسلة</button>`
+                              ? `<button class="add-btn" onclick="addToCart('${esc(safeName)}', ${numericPrice})">+ أضف للسلة</button>`
                               : `<button class="add-btn disabled-btn" disabled>نفد حالياً ✖</button>`
                           }
                       </div>
