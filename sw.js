@@ -6,7 +6,7 @@
 // لا يلمس طلبات Supabase ولا الخطوط ولا المساعد (نطاقات أخرى) ولا أي طلب غير GET.
 // عند تغيير منطق هذا الملف: غيّر رقم النسخة حتى تُحذف النسخ القديمة.
 // =========================================================
-const CACHE = 'dailydose-v1';
+const CACHE = 'dailydose-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -41,7 +41,7 @@ self.addEventListener('fetch', (event) => {
           return new Response(
             '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             + '<title>لا يوجد اتصال</title><body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#032e24;color:#f7f1e7;font-family:system-ui,sans-serif;text-align:center;padding:24px">'
-            + '<div><div style="font-size:48px">☕</div><h2 style="margin:12px 0 6px">لا يوجد اتصال بالإنترنت</h2><p style="color:#c9a45c">تحقق من الشبكة ثم أعد فتح التطبيق.</p></div></body></html>',
+            + '<div><div style="font-family:Playfair Display,Georgia,serif;font-weight:700;font-size:44px;color:#c9a45c;line-height:1">Daily Dose</div><div style="font-family:Cairo,system-ui,sans-serif;font-weight:700;font-size:11px;letter-spacing:.32em;color:#c9a45c;margin-top:6px">CAFE &amp; MORE</div><h2 style="margin:12px 0 6px">لا يوجد اتصال بالإنترنت</h2><p style="color:#c9a45c">تحقق من الشبكة ثم أعد فتح التطبيق.</p></div></body></html>',
             { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
           );
         }
