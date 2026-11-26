@@ -16,6 +16,7 @@
 
 <!-- استدعاء مكتبة Supabase والخطوط -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="qrcode.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
@@ -325,6 +326,24 @@ button { font-family: inherit; cursor: pointer; }
 .tbl th,.tbl td{padding:9px 12px;text-align:right;border-bottom:1px solid #eadfcc}
 .tbl th{background:var(--beige);color:var(--green)}
 .oos{display:inline-block;background:#fee2e2;color:#991b1b;border-radius:20px;padding:3px 12px;margin:3px;font-size:.85rem;font-weight:700}
+/* بطاقات الولاء */
+.loy-empty{color:#887b68;grid-column:1/-1;text-align:center;padding:24px}
+.loy-cam{background:var(--dark);border-radius:20px;padding:14px;margin-bottom:20px;text-align:center}
+.loy-cam video{width:100%;max-width:420px;border-radius:14px;display:block;margin:0 auto 10px}
+.loy-cam-hint{color:var(--beige);margin-bottom:10px;font-weight:700}
+.loy-switch{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--green);padding-bottom:10px}
+.loy-switch input{width:20px;height:20px;accent-color:var(--green)}
+.loy-stats{color:#887b68;font-weight:700}
+.loy-dots{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.loy-dot{width:28px;height:28px;border-radius:50%;border:2px dashed #c9a45c;display:grid;place-items:center;font-size:14px}
+.loy-dot.on{border-style:solid;background:var(--gold)}
+.loy-meta{color:#887b68;font-size:.9rem;line-height:1.7}
+.loy-ready{background:linear-gradient(120deg,var(--gold),#e3c88a);color:var(--dark);font-weight:800;border-radius:14px;padding:8px 12px;margin:6px 0;text-align:center}
+.loy-flash{animation:loyFlash .8s ease}
+@keyframes loyFlash{0%{box-shadow:0 0 0 0 #c9a45c}100%{box-shadow:0 0 0 14px transparent}}
+.loy-modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;z-index:9999;padding:16px}
+.loy-modal>div{background:var(--white);border-radius:22px;padding:22px;max-width:340px;width:100%;text-align:center}
+.loy-modal svg{width:220px;height:220px}
 @media print{html,body{overflow:visible!important;height:auto!important}.app-wrapper{display:block;height:auto}.sidebar,.control-panel,.head-row select{display:none!important}.main-content{overflow:visible;padding:0}}
 </style>
 </head>
@@ -346,6 +365,7 @@ button { font-family: inherit; cursor: pointer; }
         <div class="logo">Daily Dose<small>CAFE & MORE</small></div>
         <h1>لوحة الإدارة والكاشير ☕</h1>
         <button class="nav-btn active" onclick="switchTab('orders', this)">🛒 الطلبات الواردة</button>
+        <button class="nav-btn" onclick="switchTab('loyalty', this)">🎁 بطاقات الولاء</button>
         <button class="nav-btn" onclick="switchTab('menu', this)">🍔 إدارة المنيو والمخزون</button>
         <button class="nav-btn" onclick="switchTab('tables', this)">🪑 إدارة الطاولات</button>
         <button class="nav-btn" onclick="switchTab('promos', this)">📢 إدارة العروض</button>
@@ -379,6 +399,40 @@ button { font-family: inherit; cursor: pointer; }
         </div>
 
         <!-- 2. إدارة المنيو والمخزون (products + categories) -->
+        <!-- بطاقات الولاء -->
+        <div id="loyalty" class="section">
+            <h2 class="section-title">🎁 بطاقات الولاء</h2>
+            <div class="control-panel">
+                <div class="input-group">
+                    <label for="loy-q">رمز البطاقة أو رقم جوال الزبون:</label>
+                    <input type="text" id="loy-q" placeholder="مثال: 7RZ5-4ZBQ-YK أو آخر 4 أرقام من الجوال" autocomplete="off" onkeydown="if(event.key==='Enter')loyFind()">
+                </div>
+                <button class="save-btn" onclick="loyFind()">🔎 بحث</button>
+                <button class="save-btn" id="loy-scan-btn" onclick="loyScan()">📷 مسح QR</button>
+            </div>
+            <div id="loy-cam" class="loy-cam" hidden>
+                <video id="loy-video" playsinline muted></video>
+                <div class="loy-cam-hint">وجّه الكاميرا على رمز QR ببطاقة الزبون</div>
+                <button class="action-btn btn-danger" onclick="loyStopScan()">إلغاء</button>
+            </div>
+            <div class="grid-container" id="loy-results"><p class="loy-empty">امسح بطاقة الزبون أو اكتب رمزها أو رقمه ⬆️</p></div>
+
+            <h3 style="margin:28px 0 12px;color:var(--green)">⚙️ إعدادات البطاقة</h3>
+            <div class="control-panel">
+                <div class="input-group" style="max-width:180px">
+                    <label for="loy-needed">عدد الأختام للهدية:</label>
+                    <input type="number" id="loy-needed" min="2" max="30">
+                </div>
+                <div class="input-group">
+                    <label for="loy-reward">الهدية:</label>
+                    <input type="text" id="loy-reward" maxlength="60" placeholder="مثال: قهوة مجانية">
+                </div>
+                <label class="loy-switch"><input type="checkbox" id="loy-active"> البطاقة شغّالة</label>
+                <button class="save-btn" onclick="loySaveSettings()">حفظ</button>
+            </div>
+            <p class="loy-stats" id="loy-stats"></p>
+        </div>
+
         <div id="menu" class="section">
             <h2 class="section-title">إضافة / تعديل عنصر في المنيو</h2>
             <div class="control-panel">
@@ -615,6 +669,162 @@ button { font-family: inherit; cursor: pointer; }
         if(tabId === 'reports') loadReports();
         if(tabId === 'jard') loadJard();
         if(tabId === 'staff') loadStaff();
+        if(tabId === 'loyalty') loadLoyalty();
+        if(tabId !== 'loyalty') loyStopScan();
+    };
+
+    /* ================= بطاقات الولاء ================= */
+    // كل العمليات عبر دوال القاعدة (loyalty_*) التي تتحقق أن المستخدم موظف؛ لا كتابة مباشرة.
+    const LOY_CODE = /^[A-HJ-NP-Z2-9]{10}$/;
+    let loyStream = null, loyTimer = null;
+
+    // يقبل: رمز البطاقة (مع أو بدون شرطات)، رابط البطاقة الممسوح من QR، أو رقم جوال
+    function loyNorm(raw) {
+        const s = String(raw || '').trim();
+        const fromUrl = s.match(/[?&]c=([A-Za-z0-9]{10})/);
+        if (fromUrl) return fromUrl[1].toUpperCase();
+        const compact = s.toUpperCase().replace(/[\s-]/g, '');
+        if (LOY_CODE.test(compact) && /[A-Z]/.test(compact)) return compact;
+        return s;
+    }
+
+    function loyCardHtml(c) {
+        const have = Math.min(c.stamps, c.needed);
+        let dots = '';
+        for (let i = 0; i < c.needed; i++) dots += `<span class="loy-dot ${i < have ? 'on' : ''}">${i === c.needed - 1 ? '🎁' : '☕'}</span>`;
+        const ready = c.stamps >= c.needed;
+        const code = esc(c.code);
+        return `<div class="card" data-code="${code}">
+            <div class="card-header"><span>👤 ${esc(c.name)}</span><span style="direction:ltr">${esc(c.phone || '')}</span></div>
+            <div class="loy-meta">الأختام: <b>${c.stamps} / ${c.needed}</b> · الهدايا المستلمة: ${c.rewards_redeemed}<br>الرمز: <span style="direction:ltr;display:inline-block">${code}</span></div>
+            <div class="loy-dots">${dots}</div>
+            ${ready ? `<div class="loy-ready">🎁 جاهز ياخد ${esc(c.reward)}</div>` : ''}
+            <div class="actions-row">
+                <button class="action-btn btn-ready" onclick="loyAct('${code}','stamp')">+ ختم</button>
+                <button class="action-btn btn-print" onclick="loyAct('${code}','unstamp')">↩ تراجع</button>
+                <button class="action-btn btn-success" ${ready ? '' : 'disabled style="opacity:.45"'} onclick="loyAct('${code}','redeem')">🎁 استبدال</button>
+            </div>
+            <div class="actions-row"><button class="action-btn btn-print" onclick="loyShowLink('${code}')">📲 رابط البطاقة للزبون</button></div>
+        </div>`;
+    }
+
+    window.loyFind = async function(raw) {
+        const db = getDB();
+        const { data: sess } = await db.auth.getSession();
+        if (!sess.session) return;
+        const q = loyNorm(raw ?? document.getElementById('loy-q').value);
+        const box = document.getElementById('loy-results');
+        if (!q) { box.innerHTML = '<p class="loy-empty">اكتب رمز البطاقة أو رقم الجوال</p>'; return; }
+        box.innerHTML = '<p class="loy-empty">جاري البحث…</p>';
+        const { data, error } = await db.rpc('loyalty_find', { p_query: q });
+        if (error) { box.innerHTML = `<p class="loy-empty" style="color:var(--danger)">${esc(error.message)}</p>`; return; }
+        box.innerHTML = data && data.length ? data.map(loyCardHtml).join('') : '<p class="loy-empty">ما في بطاقة بهالرمز أو الرقم</p>';
+    };
+
+    window.loyAct = async function(code, action) {
+        const db = getDB();
+        const el = document.querySelector(`#loy-results .card[data-code="${code}"]`);
+        if (action === 'redeem') {
+            const name = el ? el.querySelector('.card-header span').textContent : '';
+            if (!confirm(`تأكيد استبدال الهدية لـ ${name.replace('👤 ', '')}؟`)) return;
+        }
+        const fn = { stamp: 'loyalty_stamp', unstamp: 'loyalty_unstamp', redeem: 'loyalty_redeem' }[action];
+        const args = action === 'stamp' ? { p_code: code, p_count: 1 } : { p_code: code };
+        el?.querySelectorAll('button').forEach(b => b.disabled = true);
+        const { data, error } = await db.rpc(fn, args);
+        if (error) { alert(error.message); el?.querySelectorAll('button').forEach(b => b.disabled = false); return; }
+        if (el) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = loyCardHtml(data);
+            const fresh = tmp.firstElementChild;
+            fresh.classList.add('loy-flash');
+            el.replaceWith(fresh);
+        }
+        loadLoyaltyStats();
+    };
+
+    // رابط البطاقة كـ QR: الزبون يمسحه بجواله الجديد فترجع بطاقته
+    window.loyShowLink = function(code) {
+        const url = new URL('loyalty.html?c=' + code, location.href).href;
+        const qr = window.qrcode(0, 'M'); qr.addData(url); qr.make();
+        const m = document.createElement('div');
+        m.className = 'loy-modal';
+        m.innerHTML = `<div><h3 style="color:var(--green);margin-bottom:6px">📲 بطاقة الزبون</h3>
+            <p style="color:#887b68;margin-bottom:10px">خلّي الزبون يمسح الرمز بكاميرا جواله، فبترجعله بطاقته بأختامها</p>
+            ${qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true })}
+            <button class="save-btn" style="width:100%;margin-top:12px">تم</button></div>`;
+        m.addEventListener('click', e => { if (e.target === m || e.target.closest('button')) m.remove(); });
+        document.body.appendChild(m);
+    };
+
+    window.loyScan = async function() {
+        if (!('BarcodeDetector' in window) || !navigator.mediaDevices) {
+            alert('المسح بالكاميرا غير مدعوم على هالجهاز. اكتب الرمز الظاهر تحت الـ QR ببطاقة الزبون.');
+            document.getElementById('loy-q').focus();
+            return;
+        }
+        try {
+            const detector = new BarcodeDetector({ formats: ['qr_code'] });
+            loyStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            const v = document.getElementById('loy-video');
+            v.srcObject = loyStream;
+            await v.play();
+            document.getElementById('loy-cam').hidden = false;
+            loyTimer = setInterval(async () => {
+                try {
+                    const found = await detector.detect(v);
+                    if (found.length) {
+                        const val = found[0].rawValue;
+                        loyStopScan();
+                        if (navigator.vibrate) navigator.vibrate(80);
+                        document.getElementById('loy-q').value = loyNorm(val);
+                        loyFind(val);
+                    }
+                } catch (e) { /* إطار غير جاهز */ }
+            }, 350);
+        } catch (e) {
+            loyStopScan();
+            alert('ما قدرنا نفتح الكاميرا. اسمح للمتصفح باستعمال الكاميرا، أو اكتب الرمز.');
+        }
+    };
+
+    window.loyStopScan = function() {
+        if (loyTimer) { clearInterval(loyTimer); loyTimer = null; }
+        if (loyStream) { loyStream.getTracks().forEach(t => t.stop()); loyStream = null; }
+        const cam = document.getElementById('loy-cam');
+        if (cam) cam.hidden = true;
+    };
+
+    async function loadLoyaltyStats() {
+        const db = getDB();
+        const { count } = await db.from('loyalty_cards').select('id', { count: 'exact', head: true });
+        const { data: rows } = await db.from('loyalty_cards').select('rewards_redeemed');
+        const gifts = (rows || []).reduce((s, r) => s + (r.rewards_redeemed || 0), 0);
+        document.getElementById('loy-stats').textContent = `عدد البطاقات: ${count ?? 0} · الهدايا المستلمة: ${gifts}`;
+    }
+
+    async function loadLoyalty() {
+        const db = getDB();
+        const { data: sess } = await db.auth.getSession();
+        if (!sess.session) return;
+        const { data: s } = await db.from('loyalty_settings').select('*').eq('restaurant_id', restaurantId).maybeSingle();
+        if (s) {
+            document.getElementById('loy-needed').value = s.stamps_needed;
+            document.getElementById('loy-reward').value = s.reward;
+            document.getElementById('loy-active').checked = s.active;
+        }
+        loadLoyaltyStats();
+        document.getElementById('loy-q').focus();
+    }
+
+    window.loySaveSettings = async function() {
+        const db = getDB();
+        const { error } = await db.rpc('loyalty_save_settings', {
+            p_needed: Number(document.getElementById('loy-needed').value),
+            p_reward: document.getElementById('loy-reward').value,
+            p_active: document.getElementById('loy-active').checked
+        });
+        alert(error ? error.message : '✓ تم حفظ إعدادات البطاقة');
     };
 
     /* ================= 1. إدارة الطلبات الواردة ================= */

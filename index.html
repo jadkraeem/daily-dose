@@ -192,6 +192,8 @@ section { padding: 75px 6%; }
 
 .promo { margin: 0 6% 75px; border-radius: 28px; min-height: 300px; background: linear-gradient(90deg, #032e24ed, #032e2470), url('https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=1500') center/cover; display: flex; align-items: center; padding: 45px 8%; color: white; }
 .promo h2 { font-size: 36px; margin: 10px 0; }
+.loy-promo { min-height: 220px; background: linear-gradient(120deg, #032e24, #064e3b 60%, #0b6b51); }
+.loy-link { text-decoration: none; display: inline-flex; align-items: center; }
 .promo p { margin-bottom: 20px; color: #eee5d8; }
 
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center; padding-top: 0; }
@@ -285,6 +287,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       <a href="#contact">تواصل معنا</a>
     </nav>
     <div class="header-actions">
+      <a class="cart-btn loy-link" href="loyalty.html" title="بطاقة الولاء" aria-label="بطاقة الولاء">🎁</a>
       <button class="cart-btn" onclick="toggleCart()">
         🛒 <span id="cart-count">0</span>
       </button>
@@ -481,6 +484,16 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
         <h2>القهوة بطعم أرقى</h2>
         <p>كل كوب إله حكاية، وكل زيارة إلها مزاج.</p>
         <a href="#menu" class="main-btn">اكتشف المزيد</a>
+      </div>
+    </div>
+
+    <!-- بطاقة الولاء: الزبون يجمع أختام ويأخذ هدية -->
+    <div class="promo reveal loy-promo">
+      <div>
+        <span class="eyebrow">LOYALTY CARD</span>
+        <h2>☕ اجمع الأختام… والقهوة علينا</h2>
+        <p>سجّل باسمك ورقمك وخود بطاقتك على جوالك. مع كل طلب ختم، وبتكمّل الأختام بتاخد هديتك مجاناً.</p>
+        <a href="loyalty.html" class="main-btn">🎁 احصل على بطاقتك</a>
       </div>
     </div>
 

@@ -15,11 +15,13 @@
   }
 
   var page = (location.pathname.split('/').pop() || 'index.html');
-  var isStaffPage = page === 'casher.html' || page === 'kitchen.html';
+  // الزر يظهر للموظفين (الكاشير والمطبخ) ولصفحة بطاقة الولاء (ليحفظ الزبون بطاقته)، ولا يظهر في المنيو
+  var LABELS = { 'casher.html': 'الكاشير', 'kitchen.html': 'المطبخ', 'loyalty.html': 'بطاقتك' };
+  var label = LABELS[page];
   var installed = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
-  if (!isStaffPage || installed) return;
+  if (!label || installed) return;
 
-  var KEY = 'dailydose-install-hint';
+  var KEY = 'dailydose-install-hint-' + page;
   function dismissedRecently() {
     try { return Date.now() - Number(localStorage.getItem(KEY) || 0) < 7 * 864e5; } catch (e) { return false; }
   }
@@ -31,7 +33,7 @@
     '.mb-install{position:fixed;z-index:9000;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;'
     + 'max-width:calc(100% - 24px);padding:8px 8px 8px 14px;border-radius:999px;background:#032e24;color:#f7f1e7;'
     + 'box-shadow:0 10px 30px -8px rgba(0,0,0,.6),inset 0 0 0 1px #0b6b51;font:600 14px/1.4 Cairo,system-ui,sans-serif;direction:rtl}'
-    + '.mb-install b{color:#e3c88a}'
+    + '.mb-install b{color:#e3c88a}.mb-install>span{white-space:nowrap}'
     + '.mb-install button{border:0;cursor:pointer;font:inherit;border-radius:999px;padding:7px 14px}'
     + '.mb-install .mb-go{background:#c9a45c;color:#032e24;font-weight:800}'
     + '.mb-install .mb-x{background:transparent;color:#e9ddca;padding:7px 10px}'
@@ -54,7 +56,7 @@
   addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     var promptEvent = e;
-    show('📲 ثبّت <b>' + (page === 'kitchen.html' ? 'المطبخ' : 'الكاشير') + '</b> كتطبيق على هذا الجهاز', function (el) {
+    show(page === 'loyalty.html' ? '<span>📲 احفظ <b>بطاقتك</b> على جوالك</span>' : '📲 ثبّت <b>' + label + '</b> كتطبيق على هذا الجهاز', function (el) {
       el.remove();
       promptEvent.prompt();
       promptEvent.userChoice.finally(remember);

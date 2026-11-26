@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>بطاقة الولاء | Daily Dose</title>
+<link rel="manifest" href="app-loyalty.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<meta name="theme-color" content="#032e24">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="بطاقة Daily Dose">
+<script src="pwa.js" defer></script>
+<script src="qrcode.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #064e3b; --dark: #032e24; --cream: #f7f1e7; --beige: #e9ddca;
+  --gold: #c9a45c; --gold-2: #e3c88a; --text: #183b30; --white: #fffdf8; --danger: #b4412f;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  min-height: 100vh; font-family: 'Cairo', sans-serif; color: var(--text);
+  background: radial-gradient(120% 80% at 50% 0%, #0b6b51 0%, var(--dark) 55%) fixed;
+  padding: max(18px, env(safe-area-inset-top)) 16px 40px;
+}
+.wrap { max-width: 440px; margin: 0 auto; }
+.top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.logo { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 26px; font-weight: 700; direction: ltr; line-height: 1.05; }
+.logo small { display: block; text-align: center; font-family: 'Cairo'; font-size: 8px; letter-spacing: 4px; font-weight: 700; }
+.back { color: var(--beige); text-decoration: none; font-size: 14px; font-weight: 600; opacity: .85; }
+.hidden { display: none !important; }
+
+/* ---------- نموذج الانضمام ---------- */
+.panel { background: var(--white); border-radius: 26px; padding: 26px 22px; box-shadow: 0 24px 50px -24px #000a; animation: rise .5s ease both; }
+.panel h1 { color: var(--green); font-size: 1.5rem; line-height: 1.35; margin-bottom: 6px; }
+.panel p.lead { color: #5b6b62; margin-bottom: 18px; line-height: 1.7; }
+.perks { display: grid; gap: 8px; margin-bottom: 20px; }
+.perks div { display: flex; gap: 10px; align-items: center; background: var(--cream); padding: 10px 14px; border-radius: 14px; font-weight: 600; font-size: .95rem; }
+label { display: grid; gap: 6px; font-weight: 700; color: var(--green); margin-bottom: 14px; font-size: .95rem; }
+input { width: 100%; padding: 13px 16px; border-radius: 16px; border: 1.5px solid var(--beige); background: var(--cream); font: inherit; color: var(--text); outline: none; transition: border-color .2s; }
+input:focus { border-color: var(--gold); }
+.btn { width: 100%; border: 0; cursor: pointer; padding: 14px; border-radius: 30px; font: 800 1.05rem 'Cairo'; color: var(--dark); background: linear-gradient(120deg, var(--gold), var(--gold-2)); box-shadow: 0 12px 26px -12px var(--gold); transition: transform .2s; }
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .6; }
+.note { color: #6b7a72; font-size: .82rem; margin-top: 12px; text-align: center; line-height: 1.6; }
+.err { color: var(--danger); font-weight: 700; font-size: .9rem; min-height: 1.3em; margin-bottom: 8px; text-align: center; }
+
+/* ---------- البطاقة ---------- */
+.card {
+  position: relative; overflow: hidden; border-radius: 26px; padding: 22px 20px 20px; color: var(--cream);
+  background: linear-gradient(135deg, #0b6b51 0%, var(--green) 45%, var(--dark) 100%);
+  box-shadow: 0 30px 60px -28px #000c, inset 0 0 0 1px #c9a45c55; animation: rise .5s ease both;
+}
+.card::before { content: ''; position: absolute; width: 260px; height: 260px; border-radius: 50%; top: -120px; left: -80px; background: radial-gradient(closest-side, #c9a45c33, transparent); }
+.card-head { position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
+.card .logo { font-size: 22px; }
+.hello { font-size: .95rem; opacity: .9; text-align: left; }
+.hello b { display: block; font-size: 1.2rem; color: var(--gold-2); }
+.stamps { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 22px 0 16px; }
+.stamp { aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; border: 2px dashed #c9a45c77; background: #ffffff08; }
+.stamp svg { width: 58%; height: 58%; opacity: .25; }
+.stamp.on { border: 2px solid var(--gold); background: radial-gradient(circle at 35% 30%, #f3dca6, var(--gold) 65%, #a8833d); box-shadow: 0 6px 16px -6px #c9a45caa; }
+.stamp.on svg { opacity: 1; }
+.stamp.on svg path, .stamp.on svg ellipse { fill: var(--dark); stroke: var(--dark); }
+.stamp.gift { border-style: solid; border-color: var(--gold); }
+.stamp.new { animation: pop .7s cubic-bezier(.2,1.6,.4,1); }
+.progress-text { position: relative; text-align: center; font-weight: 700; font-size: 1.02rem; }
+.progress-text b { color: var(--gold-2); }
+.reward-ready { position: relative; margin-top: 14px; padding: 14px; border-radius: 18px; text-align: center; font-weight: 800; color: var(--dark); background: linear-gradient(120deg, var(--gold), var(--gold-2)); animation: glow 1.8s ease-in-out infinite; }
+
+.qr-box { background: var(--white); border-radius: 24px; padding: 20px; margin-top: 16px; text-align: center; box-shadow: 0 24px 50px -24px #000a; }
+.qr-box h2 { color: var(--green); font-size: 1.05rem; margin-bottom: 4px; }
+.qr-box p { color: #6b7a72; font-size: .88rem; margin-bottom: 12px; }
+.qr { width: 190px; height: 190px; margin: 0 auto; }
+.qr svg { width: 100%; height: 100%; }
+.code { margin-top: 10px; font: 800 1.35rem 'Cairo'; letter-spacing: .18em; direction: ltr; color: var(--dark); }
+.meta { display: flex; justify-content: space-between; margin-top: 14px; color: var(--beige); font-size: .85rem; opacity: .85; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--white); color: var(--green); padding: 12px 20px; border-radius: 30px; font-weight: 800; box-shadow: 0 14px 30px -10px #000a; animation: rise .4s ease both; z-index: 50; white-space: nowrap; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } }
+@keyframes pop { 0% { transform: scale(.3); } 100% { transform: scale(1); } }
+@keyframes glow { 50% { box-shadow: 0 0 0 6px #c9a45c33; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="./">← المنيو</a>
+    <div class="logo">Daily Dose<small>CAFE &amp; MORE</small></div>
+  </div>
+
+  <div id="loading" class="panel" style="text-align:center;color:var(--green);font-weight:700">جاري التحميل…</div>
+
+  <!-- الانضمام -->
+  <form id="join" class="panel hidden" novalidate>
+    <h1>🎁 بطاقة الولاء</h1>
+    <p class="lead" id="join-lead">اجمع الأختام مع كل طلب، وخود هديتك.</p>
+    <div class="perks">
+      <div>☕ ختم مع كل طلب</div>
+      <div>🎁 كمّل الأختام وخود هديتك مجاناً</div>
+      <div>📲 البطاقة على جوالك، بلا ورق</div>
+    </div>
+    <label>اسمك<input name="name" required maxlength="60" autocomplete="name" placeholder="مثلاً: أحمد"></label>
+    <label>رقم جوالك<input name="phone" required inputmode="tel" autocomplete="tel" dir="ltr" placeholder="09xx xxx xxx"></label>
+    <p class="err" id="join-err" role="alert"></p>
+    <button class="btn" type="submit">افتح بطاقتي</button>
+    <p class="note">رقمك ما بيشوفه إلا الكاشير، وبيستعمله بس ليرجّعلك بطاقتك إذا ضيّعتها.</p>
+  </form>
+
+  <!-- البطاقة -->
+  <div id="view" class="hidden">
+    <div class="card">
+      <div class="card-head">
+        <div class="logo">Daily Dose<small>CAFE &amp; MORE</small></div>
+        <div class="hello">أهلاً<b id="c-name"></b></div>
+      </div>
+      <div class="stamps" id="stamps"></div>
+      <div class="progress-text" id="progress"></div>
+      <div class="reward-ready hidden" id="reward-ready"></div>
+      <div class="meta"><span id="c-redeemed"></span><span>بطاقة الولاء</span></div>
+    </div>
+    <div class="qr-box">
+      <h2>اعرض البطاقة للكاشير</h2>
+      <p>مع كل طلب، الكاشير بيمسح الرمز وبيضيفلك ختم</p>
+      <div class="qr" id="qr"></div>
+      <div class="code" id="c-code"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var SB = 'https://zvwhiqjmydyyswwqmcwy.supabase.co';
+  var KEY = 'sb_publishable_w0-bscTi4h8ExH_BQD_3Ig_tGUx7qUX';
+  var RID = 'eb399736-4a86-4109-86c5-798720f6d242';
+  var STORE = 'dd-loyalty-code';
+  var CODE_RE = /^[A-HJ-NP-Z2-9]{10}$/;
+  var $ = function (id) { return document.getElementById(id); };
+  var cup = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 8h11v5a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5V8z" stroke="#c9a45c" stroke-width="1.6"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16" stroke="#c9a45c" stroke-width="1.6"/><ellipse cx="10.5" cy="20.5" rx="6.5" ry="1" fill="#c9a45c"/></svg>';
+  var gift = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11h16v9H4zM3 7h18v4H3zM12 7v13" stroke="#c9a45c" stroke-width="1.6"/><path d="M12 7c-2-4-6-3-5 0M12 7c2-4 6-3 5 0" stroke="#c9a45c" stroke-width="1.6"/></svg>';
+
+  function rpc(name, body) {
+    return fetch(SB + '/rest/v1/rpc/' + name, {
+      method: 'POST',
+      headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).catch(function () {
+      // انقطاع الإنترنت: رسالة عربية بدل نص المتصفح الإنجليزي
+      throw new Error('تعذّر الاتصال بالإنترنت، تأكد من الشبكة وحاول مرة أخرى.');
+    }).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok) throw new Error((j && j.message) || 'تعذّر الاتصال، حاول مرة أخرى.');
+        return j;
+      });
+    });
+  }
+  function save(code) { try { localStorage.setItem(STORE, code); } catch (e) { /* تجاهل */ } }
+  function stored() { try { return localStorage.getItem(STORE); } catch (e) { return null; } }
+  function forget() { try { localStorage.removeItem(STORE); } catch (e) { /* تجاهل */ } }
+  function show(id) { ['loading', 'join', 'view'].forEach(function (x) { $(x).classList.toggle('hidden', x !== id); }); }
+  function toast(t) {
+    var el = document.createElement('div'); el.className = 'toast'; el.textContent = t;
+    document.body.appendChild(el); setTimeout(function () { el.remove(); }, 3200);
+  }
+
+  var current = null;
+  function render(c, animateFrom) {
+    current = c;
+    $('c-name').textContent = c.name;
+    var needed = c.needed, have = Math.min(c.stamps, needed);
+    var html = '';
+    for (var i = 0; i < needed; i++) {
+      var on = i < have, last = i === needed - 1;
+      var isNew = animateFrom != null && on && i >= animateFrom;
+      html += '<div class="stamp' + (on ? ' on' : '') + (last ? ' gift' : '') + (isNew ? ' new' : '') + '">' + (last && !on ? gift : cup) + '</div>';
+    }
+    $('stamps').innerHTML = html;
+    var left = needed - c.stamps;
+    if (left > 0) {
+      $('progress').innerHTML = 'باقيلك <b>' + left + '</b> ' + (left === 1 ? 'ختم' : 'أختام') + ' لـ<b>' + escapeHtml(c.reward) + '</b>';
+      $('reward-ready').classList.add('hidden');
+    } else {
+      $('progress').innerHTML = 'كمّلت <b>' + needed + '</b> أختام 🎉';
+      $('reward-ready').textContent = '🎁 عندك ' + c.reward + '! اعرض البطاقة للكاشير';
+      $('reward-ready').classList.remove('hidden');
+    }
+    $('c-redeemed').textContent = c.rewards_redeemed ? ('استلمت ' + c.rewards_redeemed + (c.rewards_redeemed === 1 ? ' هدية' : ' هدايا')) : '';
+    $('c-code').textContent = c.code.slice(0, 4) + '-' + c.code.slice(4, 8) + '-' + c.code.slice(8);
+    if (!$('qr').dataset.code || $('qr').dataset.code !== c.code) {
+      var qr = window.qrcode(0, 'M');
+      qr.addData(location.origin + location.pathname + '?c=' + c.code);
+      qr.make();
+      $('qr').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+      $('qr').dataset.code = c.code;
+    }
+    show('view');
+  }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (ch) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]; }); }
+
+  function load(code, quiet) {
+    return rpc('loyalty_card', { p_code: code }).then(function (c) {
+      if (!c) { forget(); if (!quiet) show('join'); return; }
+      var before = current ? current.stamps : null;
+      var beforeRedeemed = current ? current.rewards_redeemed : null;
+      if (quiet && current && c.stamps === current.stamps && c.rewards_redeemed === current.rewards_redeemed) return;
+      render(c, before != null && c.stamps > before ? before : null);
+      if (beforeRedeemed != null && c.rewards_redeemed > beforeRedeemed) toast('🎁 تم استلام الهدية، بالهنا!');
+      else if (before != null && c.stamps > before) { toast('☕ +' + (c.stamps - before) + ' ختم!'); if (navigator.vibrate) navigator.vibrate(120); }
+    }).catch(function () { if (!quiet) { show('join'); $('join-err').textContent = 'تعذّر الاتصال بالإنترنت، حاول مرة أخرى.'; } });
+  }
+
+  $('join').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target, btn = f.querySelector('button');
+    $('join-err').textContent = '';
+    var name = f.name.value.trim(), phone = f.phone.value.trim();
+    if (name.length < 2) { $('join-err').textContent = 'اكتب اسمك (حرفين على الأقل).'; return; }
+    if (phone.replace(/\D/g, '').length < 7) { $('join-err').textContent = 'اكتب رقم جوالك.'; return; }
+    btn.disabled = true; btn.textContent = 'لحظة…';
+    rpc('loyalty_join', { p_restaurant: RID, p_name: name, p_phone: phone }).then(function (c) {
+      save(c.code); render(c); toast('🎉 أهلاً فيك! هاي بطاقتك');
+    }).catch(function (err) { $('join-err').textContent = err.message; })
+      .finally(function () { btn.disabled = false; btn.textContent = 'افتح بطاقتي'; });
+  });
+
+  // رابط من الكاشير (?c=) يرجّع البطاقة لجهاز جديد
+  var fromUrl = (new URLSearchParams(location.search).get('c') || '').toUpperCase();
+  if (CODE_RE.test(fromUrl)) { save(fromUrl); history.replaceState(null, '', location.pathname); }
+  var code = stored();
+  if (code && CODE_RE.test(code)) load(code); else show('join');
+
+  // تحديث تلقائي: الختم يظهر عند الزبون لحظة ما يضيفه الكاشير
+  setInterval(function () { var c = stored(); if (c && !document.hidden && current) load(c, true); }, 6000);
+  document.addEventListener('visibilitychange', function () { var c = stored(); if (c && !document.hidden && current) load(c, true); });
+})();
+</script>
+</body>
+</html>
