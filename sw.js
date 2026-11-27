@@ -6,7 +6,7 @@
 // لا يلمس طلبات Supabase ولا الخطوط ولا المساعد (نطاقات أخرى) ولا أي طلب غير GET.
 // عند تغيير منطق هذا الملف: غيّر رقم النسخة حتى تُحذف النسخ القديمة.
 // =========================================================
-const CACHE = 'dailydose-v11';
+const CACHE = 'dailydose-v12';
 
 self.addEventListener('install', () => self.skipWaiting());
 
