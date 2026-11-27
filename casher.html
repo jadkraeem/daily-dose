@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Daily Dose | Cashier & Admin Dashboard</title>
 <link rel="manifest" href="app-casher.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -344,7 +344,44 @@ button { font-family: inherit; cursor: pointer; }
 .loy-modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;z-index:9999;padding:16px}
 .loy-modal>div{background:var(--white);border-radius:22px;padding:22px;max-width:340px;width:100%;text-align:center}
 .loy-modal svg{width:220px;height:220px}
-@media print{html,body{overflow:visible!important;height:auto!important}.app-wrapper{display:block;height:auto}.sidebar,.control-panel,.head-row select{display:none!important}.main-content{overflow:visible;padding:0}}
+/* ===== الموبايل والتابلت الصغير ===== */
+.m-bar,.m-shade{display:none}
+@media (max-width: 860px){
+  .app-wrapper{flex-direction:column;height:100vh;height:100dvh}
+  .m-bar{display:flex;align-items:center;gap:12px;flex-shrink:0;background:var(--panel-bg);border-bottom:2px solid #374151;
+    padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:5}
+  .m-menu{width:44px;height:44px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:22px;line-height:1;flex-shrink:0}
+  .m-menu:active{background:var(--green)}
+  .m-title{flex:1;min-width:0;color:#f3f4f6;font-weight:800;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-logo{font-size:19px;flex-shrink:0}
+  .sidebar{position:fixed;top:0;bottom:0;inset-inline-start:0;width:min(300px,86vw);z-index:1000;
+    transform:translateX(105%);transition:transform .28s ease;padding-top:calc(20px + env(safe-area-inset-top));padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  body.nav-open .sidebar{transform:none}
+  .m-shade{position:fixed;inset:0;background:#000a;z-index:999;opacity:0;pointer-events:none;transition:opacity .28s;display:block}
+  body.nav-open .m-shade{opacity:1;pointer-events:auto}
+  .nav-btn{padding:12px 15px;flex-shrink:0}
+  .nav-btn:hover,.nav-btn.active{transform:none}
+  .main-content{padding:16px 14px;padding-bottom:calc(24px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+  .section-title{font-size:1.3rem;margin-bottom:14px}
+  .grid-container{grid-template-columns:1fr;gap:14px}
+  .card{padding:16px}
+  .card:hover{transform:none}
+  .control-panel{padding:16px;gap:12px}
+  .input-group{min-width:100%}
+  .control-panel>.save-btn,.control-panel>button{flex:1 1 auto}
+  input,select,textarea{font-size:16px!important} /* بدون هيك الآيفون بيعمل زوم لما تكتب */
+  .stats-row{grid-template-columns:1fr 1fr;gap:10px}
+  .stat-box{padding:14px 10px}
+  .stat-box h3{font-size:1.45rem}
+  .two-col{grid-template-columns:1fr}
+  .panel{padding:14px;overflow-x:auto}
+  .tbl{display:block;overflow-x:auto;white-space:nowrap}
+  .switch-box{padding:14px}
+  .ai-chat{height:52dvh}
+  .ai-msg{max-width:92%}
+  .action-btn{padding:12px 10px}
+}
+@media print{.m-bar,.m-shade{display:none!important}html,body{overflow:visible!important;height:auto!important}.app-wrapper{display:block;height:auto}.sidebar,.control-panel,.head-row select{display:none!important}.main-content{overflow:visible;padding:0}}
 </style>
 </head>
 <body>
@@ -360,6 +397,13 @@ button { font-family: inherit; cursor: pointer; }
 </div>
 
 <div class="app-wrapper">
+    <!-- شريط علوي للموبايل: زر القائمة + اسم القسم الحالي -->
+    <header class="m-bar">
+        <button class="m-menu" type="button" onclick="toggleNav()" aria-label="القائمة">☰</button>
+        <span class="m-title" id="m-title">🛒 الطلبات الواردة</span>
+        <div class="logo m-logo">Daily Dose</div>
+    </header>
+    <div class="m-shade" onclick="toggleNav(false)"></div>
     <!-- القائمة الجانبية -->
     <div class="sidebar">
         <div class="logo">Daily Dose<small>CAFE & MORE</small></div>
@@ -654,11 +698,22 @@ button { font-family: inherit; cursor: pointer; }
         return `طاولة: ${val}`;
     }
 
+    // فتح/إغلاق القائمة الجانبية على الموبايل
+    window.toggleNav = function(open) {
+        const on = open === undefined ? !document.body.classList.contains('nav-open') : open;
+        document.body.classList.toggle('nav-open', on);
+    };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleNav(false); });
+
     window.switchTab = function(tabId, btn) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        // الموبايل: اسم القسم بالشريط العلوي، وسكّر القائمة، وارجع لأول الصفحة
+        document.getElementById('m-title').textContent = btn.textContent.trim();
+        toggleNav(false);
+        document.querySelector('.main-content').scrollTop = 0;
 
         if(tabId === 'orders') loadOrders();
         if(tabId === 'menu') loadMenu();
@@ -757,34 +812,78 @@ button { font-family: inherit; cursor: pointer; }
         document.body.appendChild(m);
     };
 
+    // قارئ QR: نستعمل قارئ المتصفح المدمج إذا موجود (أندرويد)، وإلا مكتبة jsQR (آيفون، كروم ويندوز…)
+    async function loyQrReader() {
+        if ('BarcodeDetector' in window) {
+            try {
+                const fmts = await BarcodeDetector.getSupportedFormats();
+                if (fmts.includes('qr_code')) {
+                    const d = new BarcodeDetector({ formats: ['qr_code'] });
+                    return async v => { const f = await d.detect(v); return f.length ? f[0].rawValue : null; };
+                }
+            } catch (e) { /* ننتقل للمكتبة */ }
+        }
+        if (!window.jsQR) {
+            await new Promise((ok, fail) => {
+                const s = document.createElement('script');
+                s.src = 'jsqr.js'; s.onload = ok; s.onerror = fail;
+                document.head.appendChild(s);
+            });
+        }
+        const cv = document.createElement('canvas');
+        const ctx = cv.getContext('2d', { willReadFrequently: true });
+        return async v => {
+            if (!v.videoWidth) return null;
+            const scale = Math.min(1, 640 / v.videoWidth); // تصغير للسرعة
+            cv.width = Math.round(v.videoWidth * scale); cv.height = Math.round(v.videoHeight * scale);
+            ctx.drawImage(v, 0, 0, cv.width, cv.height);
+            const img = ctx.getImageData(0, 0, cv.width, cv.height);
+            const r = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+            return r ? r.data : null;
+        };
+    }
+
     window.loyScan = async function() {
-        if (!('BarcodeDetector' in window) || !navigator.mediaDevices) {
-            alert('المسح بالكاميرا غير مدعوم على هالجهاز. اكتب الرمز الظاهر تحت الـ QR ببطاقة الزبون.');
+        if (loyStream) return;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('هالمتصفح ما بيسمح بالكاميرا. افتح لوحة الكاشير من Safari أو Chrome مباشرة، أو اكتب الرمز الظاهر تحت الـ QR.');
             document.getElementById('loy-q').focus();
             return;
         }
+        const btn = document.getElementById('loy-scan-btn');
+        btn.disabled = true;
         try {
-            const detector = new BarcodeDetector({ formats: ['qr_code'] });
-            loyStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            loyStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
             const v = document.getElementById('loy-video');
+            v.setAttribute('playsinline', ''); v.muted = true; // ضروري للآيفون
             v.srcObject = loyStream;
-            await v.play();
             document.getElementById('loy-cam').hidden = false;
+            await v.play();
+            document.getElementById('loy-cam').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const read = await loyQrReader();
+            let busy = false;
             loyTimer = setInterval(async () => {
+                if (busy || !loyStream) return;
+                busy = true;
                 try {
-                    const found = await detector.detect(v);
-                    if (found.length) {
-                        const val = found[0].rawValue;
+                    const val = await read(v);
+                    if (val) {
                         loyStopScan();
                         if (navigator.vibrate) navigator.vibrate(80);
                         document.getElementById('loy-q').value = loyNorm(val);
                         loyFind(val);
                     }
                 } catch (e) { /* إطار غير جاهز */ }
-            }, 350);
+                busy = false;
+            }, 250);
         } catch (e) {
             loyStopScan();
-            alert('ما قدرنا نفتح الكاميرا. اسمح للمتصفح باستعمال الكاميرا، أو اكتب الرمز.');
+            const denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
+            alert(denied
+                ? 'الكاميرا ممنوعة. بالآيفون: الإعدادات ← Safari ← الكاميرا ← «السماح»، أو اكبس «aA» بشريط العنوان ← إعدادات الموقع ← الكاميرا ← سماح. وبعدين جرّب مرة تانية.'
+                : 'ما قدرنا نفتح الكاميرا. سكّر أي تطبيق تاني عم يستعمل الكاميرا وجرّب مرة تانية، أو اكتب الرمز.');
+        } finally {
+            btn.disabled = false;
         }
     };
 
@@ -1567,10 +1666,11 @@ button { font-family: inherit; cursor: pointer; }
         const emailSent = document.getElementById('login-email').value.replace(/[\s\u200b-\u200f\u202a-\u202e]/g, '').toLowerCase();
         const passSent = document.getElementById('login-pass').value.trim();
         const { error } = await getDB().auth.signInWithPassword({ email: emailSent, password: passSent });
-        document.getElementById('login-err').textContent = error
-            ? ('خطأ: ' + error.message + ' | البريد المُرسل: [' + emailSent + '] | طول الكلمة: ' + passSent.length)
-            : '';
-        if (error) console.error('Login error:', error.message, error.status, error.code);
+        // رسالة واضحة بدون كشف أي تفاصيل عن الحساب أو كلمة المرور
+        document.getElementById('login-err').textContent = !error ? ''
+            : (error.status === 400 || /invalid/i.test(error.message)) ? 'البريد أو كلمة المرور غلط.'
+            : /fetch|network/i.test(error.message) ? 'تعذّر الاتصال بالإنترنت، حاول مرة أخرى.'
+            : 'تعذّر تسجيل الدخول، حاول مرة أخرى.';
         if (!error) { document.getElementById('login-pass').value = ''; requireLogin(); }
     };
     window.doLogout = async function() { await getDB().auth.signOut(); requireLogin(); };

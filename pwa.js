@@ -56,7 +56,7 @@
   addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     var promptEvent = e;
-    show(page === 'loyalty.html' ? '<span>📲 احفظ <b>بطاقتك</b> على جوالك</span>' : '📲 ثبّت <b>' + label + '</b> كتطبيق على هذا الجهاز', function (el) {
+    show(page === 'loyalty.html' ? '<span>📲 احفظ <b>بطاقتك</b> على جوالك</span>' : '<span>📲 ثبّت <b>' + label + '</b> كتطبيق</span>', function (el) {
       el.remove();
       promptEvent.prompt();
       promptEvent.userChoice.finally(remember);
