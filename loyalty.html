@@ -80,6 +80,10 @@ input:focus { border-color: var(--gold); }
 .qr svg { width: 100%; height: 100%; }
 .code { margin-top: 10px; font: 800 1.35rem 'Cairo'; letter-spacing: .18em; direction: ltr; color: var(--dark); }
 .meta { display: flex; justify-content: space-between; margin-top: 14px; color: var(--beige); font-size: .85rem; opacity: .85; }
+[hidden] { display: none !important; }
+.tabs { display: flex; gap: 6px; background: var(--cream); border-radius: 999px; padding: 5px; margin-bottom: 18px; }
+.tab { flex: 1; border: 0; background: transparent; border-radius: 999px; padding: 10px 6px; font: 800 .95rem 'Cairo', sans-serif; color: #6b7a72; cursor: pointer; transition: background .2s, color .2s; }
+.tab.on { background: var(--green); color: var(--white); box-shadow: 0 6px 14px -8px var(--green); }
 .save-img { margin-top: 16px; }
 .img-modal { position: fixed; inset: 0; z-index: 9500; background: #000c; display: grid; place-items: center; padding: 16px; animation: rise .3s ease both; }
 .img-modal > div { width: 100%; max-width: 380px; text-align: center; color: var(--cream); }
@@ -115,9 +119,13 @@ input:focus { border-color: var(--gold); }
 
   <!-- الانضمام -->
   <form id="join" class="panel hidden" novalidate>
-    <h1>🎁 بطاقة الولاء</h1>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" class="tab on" data-mode="new" aria-selected="true">✨ بطاقة جديدة</button>
+      <button type="button" role="tab" class="tab" data-mode="have" aria-selected="false">🔑 عندي بطاقة</button>
+    </div>
+    <h1 id="join-title">🎁 بطاقة الولاء</h1>
     <p class="lead" id="join-lead">اجمع الأختام مع كل طلب، وخود هديتك.</p>
-    <div class="perks">
+    <div class="perks" id="perks">
       <div>☕ ختم مع كل طلب</div>
       <div>🎁 كمّل الأختام وخود هديتك مجاناً</div>
       <div>📲 البطاقة على جوالك، بلا ورق</div>
@@ -125,8 +133,8 @@ input:focus { border-color: var(--gold); }
     <label>اسمك<input name="name" required maxlength="60" autocomplete="name" placeholder="مثلاً: أحمد"></label>
     <label>رقم جوالك<input name="phone" required inputmode="tel" autocomplete="tel" dir="ltr" placeholder="09xx xxx xxx"></label>
     <p class="err" id="join-err" role="alert"></p>
-    <button class="btn" type="submit">افتح بطاقتي</button>
-    <p class="note">رقمك ما بيشوفه إلا الكاشير، وبيستعمله بس ليرجّعلك بطاقتك إذا ضيّعتها.</p>
+    <button class="btn" type="submit" id="join-btn">افتح بطاقتي</button>
+    <p class="note" id="join-note">رقمك ما بيشوفه إلا الكاشير، وبتستعمله مع اسمك لترجّع بطاقتك إذا غيّرت جوالك.</p>
   </form>
 
   <!-- البطاقة -->
@@ -246,18 +254,50 @@ input:focus { border-color: var(--gold); }
     }).catch(function () { if (!quiet) { show('join'); $('join-err').textContent = 'تعذّر الاتصال بالإنترنت، حاول مرة أخرى.'; } });
   }
 
+  // وضعين: «بطاقة جديدة» أو «عندي بطاقة» (نفس الاسم + الرقم بيرجّعوا البطاقة على أي جهاز)
+  var mode = 'new';
+  var MODES = {
+    'new':  { title: '🎁 بطاقة الولاء', lead: 'اجمع الأختام مع كل طلب، وخود هديتك.', btn: 'افتح بطاقتي',
+              note: 'رقمك ما بيشوفه إلا الكاشير، وبتستعمله مع اسمك لترجّع بطاقتك إذا غيّرت جوالك.' },
+    'have': { title: '🔑 رجّع بطاقتك', lead: 'اكتب نفس الاسم والرقم اللي سجّلت فيهم أول مرة، وبترجعلك بطاقتك بأختامها.', btn: 'رجّعلي بطاقتي',
+              note: 'إذا نسيت كيف كتبت اسمك، الكاشير بيقدر يرجّعلك بطاقتك برقم جوالك.' }
+  };
+  function setMode(m, keepErr) {
+    mode = m;
+    var t = MODES[m];
+    $('join-title').textContent = t.title; $('join-lead').textContent = t.lead;
+    $('join-btn').textContent = t.btn; $('join-note').textContent = t.note;
+    $('perks').hidden = m === 'have';
+    document.querySelectorAll('.tab').forEach(function (b) { var on = b.dataset.mode === m; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+    if (!keepErr) $('join-err').textContent = '';
+  }
+  document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { setMode(b.dataset.mode); }); });
+
   $('join').addEventListener('submit', function (e) {
     e.preventDefault();
-    var f = e.target, btn = f.querySelector('button');
+    var f = e.target, btn = $('join-btn');
     $('join-err').textContent = '';
     var name = f.name.value.trim(), phone = f.phone.value.trim();
-    if (name.length < 2) { $('join-err').textContent = 'اكتب اسمك (حرفين على الأقل).'; return; }
+    if (name.length < 2) { $('join-err').textContent = mode === 'have' ? 'اكتب اسمك متل ما سجّلته.' : 'اكتب اسمك (حرفين على الأقل).'; return; }
     if (phone.replace(/\D/g, '').length < 7) { $('join-err').textContent = 'اكتب رقم جوالك.'; return; }
     btn.disabled = true; btn.textContent = 'لحظة…';
-    rpc('loyalty_join', { p_restaurant: RID, p_name: name, p_phone: phone }).then(function (c) {
-      save(c.code); render(c); toast('🎉 أهلاً فيك! هاي بطاقتك');
-    }).catch(function (err) { $('join-err').textContent = err.message; })
-      .finally(function () { btn.disabled = false; btn.textContent = 'افتح بطاقتي'; });
+    var req = mode === 'have'
+      ? rpc('loyalty_recover', { p_restaurant: RID, p_name: name, p_phone: phone }).then(function (c) {
+          if (!c || c.error) throw new Error((c && c.error) || 'تعذّر إرجاع البطاقة، حاول مرة أخرى.');
+          save(c.code); render(c); toast('🎉 رجعت بطاقتك يا ' + c.name + '!');
+        })
+      : rpc('loyalty_join', { p_restaurant: RID, p_name: name, p_phone: phone }).then(function (c) {
+          save(c.code); render(c); toast('🎉 أهلاً فيك! هاي بطاقتك');
+        });
+    req.catch(function (err) {
+      // الرقم مسجّل من قبل: نحوّله لـ«عندي بطاقة» والخانات بتضل معبّاية
+      if (mode === 'new' && /عندي بطاقة/.test(err.message)) {
+        setMode('have', true);
+        $('join-err').textContent = 'هالرقم عنده بطاقة. تأكد إنو الاسم متل أول مرة واكبس «رجّعلي بطاقتي».';
+      } else {
+        $('join-err').textContent = err.message;
+      }
+    }).finally(function () { btn.disabled = false; btn.textContent = MODES[mode].btn; });
   });
 
   // إذا البطاقة مفتوحة كتطبيق من الشاشة الرئيسية، ما في داعي لشرح الإضافة
@@ -370,7 +410,7 @@ input:focus { border-color: var(--gold); }
   $('other').addEventListener('click', function () {
     if (!confirm('بدك تفتح بطاقة لشخص تاني على هالجوال؟\nالبطاقة الحالية ما بتضيع: صاحبها بيقدر يرجّعها من الكاشير برقم جواله.')) return;
     forget(); current = null; $('qr').dataset.code = '';
-    $('join').reset(); $('join-err').textContent = '';
+    $('join').reset(); setMode('new');
     show('join'); scrollTo(0, 0);
   });
 
