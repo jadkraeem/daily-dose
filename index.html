@@ -193,7 +193,11 @@ section { padding: 75px 6%; }
 .promo { margin: 0 6% 75px; border-radius: 28px; min-height: 300px; background: linear-gradient(90deg, #032e24ed, #032e2470), url('https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=1500') center/cover; display: flex; align-items: center; padding: 45px 8%; color: white; }
 .promo h2 { font-size: 36px; margin: 10px 0; }
 .loy-promo { min-height: 220px; background: linear-gradient(120deg, #032e24, #064e3b 60%, #0b6b51); }
-.loy-link { text-decoration: none; display: inline-flex; align-items: center; }
+.loy-link { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.loy-badge { font-size: 13px; font-weight: 800; color: var(--gold); direction: ltr; white-space: nowrap; }
+.loy-link.ready { background: var(--gold); color: #032e24; animation: loyGlow 1.8s ease-in-out infinite; }
+.loy-link.ready .loy-badge { color: #032e24; }
+@keyframes loyGlow { 50% { box-shadow: 0 0 0 6px #c9a45c44; } }
 .promo p { margin-bottom: 20px; color: #eee5d8; }
 
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center; padding-top: 0; }
@@ -287,7 +291,7 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       <a href="#contact">تواصل معنا</a>
     </nav>
     <div class="header-actions">
-      <a class="cart-btn loy-link" href="loyalty.html" title="بطاقة الولاء" aria-label="بطاقة الولاء">🎁</a>
+      <a class="cart-btn loy-link" href="loyalty.html" title="بطاقة الولاء" aria-label="بطاقة الولاء">🎁<span class="loy-badge" id="loy-badge" hidden></span></a>
       <button class="cart-btn" onclick="toggleCart()">
         🛒 <span id="cart-count">0</span>
       </button>
@@ -491,9 +495,9 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
     <div class="promo reveal loy-promo">
       <div>
         <span class="eyebrow">LOYALTY CARD</span>
-        <h2>☕ اجمع الأختام… والقهوة علينا</h2>
-        <p>سجّل باسمك ورقمك وخود بطاقتك على جوالك. مع كل طلب ختم، وبتكمّل الأختام بتاخد هديتك مجاناً.</p>
-        <a href="loyalty.html" class="main-btn">🎁 احصل على بطاقتك</a>
+        <h2 id="loy-promo-title">☕ اجمع الأختام… والقهوة علينا</h2>
+        <p id="loy-promo-text">سجّل باسمك ورقمك وخود بطاقتك على جوالك. مع كل طلب ختم، وبتكمّل الأختام بتاخد هديتك مجاناً.</p>
+        <a href="loyalty.html" class="main-btn" id="loy-promo-btn">🎁 احصل على بطاقتك</a>
       </div>
     </div>
 
@@ -578,6 +582,27 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
   const supabaseUrl = 'https://zvwhiqjmydyyswwqmcwy.supabase.co';
   const supabaseKey = 'sb_publishable_w0-bscTi4h8ExH_BQD_3Ig_tGUx7qUX';
   const dbClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+  // بطاقة الولاء: إذا الزبون عنده بطاقة محفوظة على هالجهاز، نوريه أختامه بزر 🎁 وبقسم البطاقة
+  async function showMyLoyalty() {
+      let code = null;
+      try { code = localStorage.getItem('dd-loyalty-code'); } catch (e) { return; }
+      if (!code || !/^[A-HJ-NP-Z2-9]{10}$/.test(code)) return;
+      const { data: c } = await dbClient.rpc('loyalty_card', { p_code: code });
+      if (!c) return;
+      const have = Math.min(c.stamps, c.needed), ready = c.stamps >= c.needed;
+      const badge = document.getElementById('loy-badge');
+      badge.textContent = have + '/' + c.needed;
+      badge.hidden = false;
+      document.querySelector('.loy-link').classList.toggle('ready', ready);
+      document.getElementById('loy-promo-title').textContent = ready ? '🎁 هديتك جاهزة يا ' + c.name + '!' : '☕ أهلاً ' + c.name;
+      document.getElementById('loy-promo-text').textContent = ready
+          ? 'عندك ' + c.reward + '. افتح بطاقتك واعرضها للكاشير.'
+          : 'معك ' + have + ' من ' + c.needed + ' أختام. باقيلك ' + (c.needed - c.stamps) + ' لـ' + c.reward + '.';
+      document.getElementById('loy-promo-btn').textContent = '🎁 افتح بطاقتي';
+  }
+  showMyLoyalty();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) showMyLoyalty(); });
   const restaurantId = 'eb399736-4a86-4109-86c5-798720f6d242';
 
   const urlParams = new URLSearchParams(window.location.search);

@@ -80,6 +80,19 @@ input:focus { border-color: var(--gold); }
 .qr svg { width: 100%; height: 100%; }
 .code { margin-top: 10px; font: 800 1.35rem 'Cairo'; letter-spacing: .18em; direction: ltr; color: var(--dark); }
 .meta { display: flex; justify-content: space-between; margin-top: 14px; color: var(--beige); font-size: .85rem; opacity: .85; }
+.save-img { margin-top: 16px; }
+.img-modal { position: fixed; inset: 0; z-index: 9500; background: #000c; display: grid; place-items: center; padding: 16px; animation: rise .3s ease both; }
+.img-modal > div { width: 100%; max-width: 380px; text-align: center; color: var(--cream); }
+.img-modal p { margin-bottom: 12px; font-weight: 700; }
+.img-modal b { color: var(--gold-2); }
+.img-modal img { width: 100%; max-height: 66vh; object-fit: contain; border-radius: 18px; box-shadow: 0 20px 50px -20px #000; -webkit-touch-callout: default; }
+.img-modal .btn { margin-top: 14px; }
+.save-note { text-align: center; color: var(--beige); font-size: .82rem; margin-top: 8px; opacity: .85; line-height: 1.6; }
+.howto { margin-top: 14px; background: #ffffff0d; border: 1px solid #c9a45c55; border-radius: 18px; padding: 12px 16px; color: var(--cream); }
+.howto summary { cursor: pointer; font-weight: 800; color: var(--gold-2); list-style-position: inside; }
+.howto-body { margin-top: 10px; font-size: .9rem; line-height: 1.8; }
+.howto-body p + p { margin-top: 6px; }
+.key { display: inline-block; background: #ffffff1a; border-radius: 8px; padding: 0 8px; }
 .renew { text-align: center; color: var(--beige); font-size: .86rem; margin-top: 16px; opacity: .9; }
 .other { display: block; margin: 10px auto 0; background: transparent; border: 1px solid #c9a45c88; color: var(--gold-2); font: 700 .92rem 'Cairo', sans-serif; padding: 10px 18px; border-radius: 999px; cursor: pointer; }
 .other:active { transform: scale(.97); }
@@ -134,6 +147,17 @@ input:focus { border-color: var(--gold); }
       <div class="qr" id="qr"></div>
       <div class="code" id="c-code"></div>
     </div>
+    <!-- حتى يلاقي الزبون بطاقته بسهولة: صورة بمعرض الصور + أيقونة على الشاشة -->
+    <button type="button" class="btn save-img" id="save-img">🖼️ احفظ البطاقة كصورة بجوالك</button>
+    <p class="save-note">الصورة فيها رمز الـ QR: بتفتحها من معرض الصور وبتعرضها للكاشير حتى بلا إنترنت</p>
+    <details class="howto" id="howto">
+      <summary>📲 حط بطاقتك على شاشة جوالك متل التطبيق</summary>
+      <div class="howto-body">
+        <p><b>آيفون (Safari):</b> اكبس زر المشاركة <span class="key">⬆️</span> تحت ← «إضافة إلى الشاشة الرئيسية» ← «إضافة».</p>
+        <p><b>أندرويد (Chrome):</b> اكبس <span class="key">⋮</span> فوق ← «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».</p>
+        <p>بتطلعلك أيقونة Daily Dose، بتكبسها بتفتح بطاقتك فوراً.</p>
+      </div>
+    </details>
     <p class="renew">🔄 بعد ما تاخد هديتك، البطاقة بتبلّش من جديد لحالها</p>
     <button type="button" class="other" id="other">👤 مو بطاقتك؟ افتح بطاقة لشخص تاني</button>
   </div>
@@ -206,6 +230,7 @@ input:focus { border-color: var(--gold); }
       $('qr').dataset.code = c.code;
     }
     show('view');
+    prepareImage(c);
   }
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (ch) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]; }); }
 
@@ -233,6 +258,111 @@ input:focus { border-color: var(--gold); }
       save(c.code); render(c); toast('🎉 أهلاً فيك! هاي بطاقتك');
     }).catch(function (err) { $('join-err').textContent = err.message; })
       .finally(function () { btn.disabled = false; btn.textContent = 'افتح بطاقتي'; });
+  });
+
+  // إذا البطاقة مفتوحة كتطبيق من الشاشة الرئيسية، ما في داعي لشرح الإضافة
+  if ((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true) $('howto').hidden = true;
+
+  // ===== حفظ البطاقة كصورة (للمعرض) =====
+  function cardImage(c) {
+    var W = 1080, H = 1560, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    var x = cv.getContext('2d');
+    x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    var bg = x.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#0b6b51'); bg.addColorStop(.45, '#064e3b'); bg.addColorStop(1, '#032e24');
+    x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    function rr(px, py, w, h, r) { x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r); x.arcTo(px, py + h, px, py, r); x.arcTo(px, py, px + w, py, r); x.closePath(); }
+    // الشعار
+    x.fillStyle = '#c9a45c'; x.font = '700 104px "Playfair Display", serif'; x.direction = 'ltr';
+    x.fillText('Daily Dose', W / 2, 150);
+    x.fillStyle = '#f7f1e7'; x.font = '700 30px Cairo, sans-serif';
+    x.fillText('C A F E   &   M O R E', W / 2, 220);
+    x.direction = 'rtl';
+    x.fillStyle = '#e9ddca'; x.font = '600 40px Cairo, sans-serif'; x.fillText('بطاقة الولاء', W / 2, 310);
+    x.fillStyle = '#e3c88a'; x.font = '800 64px Cairo, sans-serif'; x.fillText(c.name, W / 2, 385);
+    // الأختام: 4 بكل سطر
+    var have = Math.min(c.stamps, c.needed), per = 4, rad = 62, gap = 40;
+    var rows = Math.ceil(c.needed / per);
+    for (var i = 0; i < c.needed; i++) {
+      var row = Math.floor(i / per), col = i % per, inRow = Math.min(per, c.needed - row * per);
+      var rowW = inRow * rad * 2 + (inRow - 1) * gap;
+      var cx = W / 2 + rowW / 2 - rad - col * (rad * 2 + gap); // من اليمين لليسار
+      var cy = 510 + row * (rad * 2 + 30);
+      x.beginPath(); x.arc(cx, cy, rad, 0, Math.PI * 2);
+      if (i < have) { x.fillStyle = '#c9a45c'; x.fill(); }
+      else { x.setLineDash([10, 8]); x.strokeStyle = '#c9a45c99'; x.lineWidth = 4; x.stroke(); x.setLineDash([]); }
+      x.font = '52px sans-serif'; x.fillStyle = '#032e24';
+      x.globalAlpha = i < have ? 1 : .35;
+      x.fillText(i === c.needed - 1 ? '🎁' : '☕', cx, cy + 4);
+      x.globalAlpha = 1;
+    }
+    var yAfter = 510 + (rows - 1) * (rad * 2 + 30) + rad + 60;
+    x.fillStyle = '#f7f1e7'; x.font = '700 40px Cairo, sans-serif';
+    x.fillText(c.stamps >= c.needed ? '🎁 عندك ' + c.reward + '!' : 'معك ' + have + ' من ' + c.needed + ' أختام', W / 2, yAfter);
+    // لوحة الـ QR
+    var py = yAfter + 60, ph = H - py - 110;
+    x.fillStyle = '#fffdf8'; rr(90, py, W - 180, ph, 48); x.fill();
+    x.fillStyle = '#064e3b'; x.font = '800 40px Cairo, sans-serif'; x.fillText('اعرض الرمز للكاشير', W / 2, py + 70);
+    var q = window.qrcode(0, 'M'); q.addData(location.origin + location.pathname + '?c=' + c.code); q.make();
+    var n = q.getModuleCount(), size = Math.min(560, ph - 250), cell = Math.floor(size / n), qs = cell * n, qx = (W - qs) / 2, qy = py + 120;
+    x.fillStyle = '#000';
+    for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) x.fillRect(qx + k * cell, qy + r * cell, cell, cell);
+    x.direction = 'ltr'; x.fillStyle = '#032e24'; x.font = '800 54px Cairo, sans-serif';
+    x.fillText(c.code.slice(0, 4) + '-' + c.code.slice(4, 8) + '-' + c.code.slice(8), W / 2, qy + qs + 60);
+    x.direction = 'rtl';
+    x.fillStyle = '#e9ddca'; x.font = '600 30px Cairo, sans-serif';
+    x.fillText('عدد الأختام المحدّث دايماً بصفحة البطاقة · ' + new Date().toLocaleDateString('en-GB'), W / 2, H - 55);
+    return cv;
+  }
+
+  // الصورة بتنجهّز مسبقاً (الآيفون بيرفض نافذة المشاركة إذا تأخرت بعد الكبسة)
+  var imgBlob = null, imgKey = '';
+  function prepareImage(c) {
+    var key = c.code + ':' + c.stamps + ':' + c.rewards_redeemed + ':' + c.name;
+    if (key === imgKey) return;
+    imgKey = key; imgBlob = null;
+    var fontsReady = (document.fonts && document.fonts.load)
+      ? Promise.all([document.fonts.load('800 64px Cairo'), document.fonts.load('600 40px Cairo'), document.fonts.load('700 104px "Playfair Display"')]).catch(function () {})
+      : Promise.resolve();
+    fontsReady.then(function () {
+      if (key !== imgKey) return;
+      cardImage(c).toBlob(function (b) { if (key === imgKey) imgBlob = b; }, 'image/png');
+    });
+  }
+
+  // بديل مضمون: الصورة بنافذة، والزبون بيضغط عليها مطولاً ← «حفظ في الصور»
+  function showImage(blob) {
+    var url = URL.createObjectURL(blob);
+    var m = document.createElement('div'); m.className = 'img-modal';
+    m.innerHTML = '<div><p>اضغط مطوّلاً على الصورة ← <b>«حفظ في الصور»</b></p><img alt="بطاقة Daily Dose"><button type="button" class="btn">تم</button></div>';
+    m.querySelector('img').src = url;
+    m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('button')) { m.remove(); URL.revokeObjectURL(url); } });
+    document.body.appendChild(m);
+  }
+
+  $('save-img').addEventListener('click', function () {
+    if (!current) return;
+    if (!imgBlob) { toast('لحظة، عم نجهّز الصورة…'); prepareImage(current); return; }
+    var name = 'daily-dose-card.png';
+    var file = null;
+    try { file = new File([imgBlob], name, { type: 'image/png' }); } catch (e) { /* متصفح قديم */ }
+    var mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // الجوال: نافذة المشاركة فيها «حفظ الصورة»
+    if (mobile && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      var blob = imgBlob;
+      navigator.share({ files: [file], title: 'بطاقة Daily Dose' }).catch(function (e) {
+        if (!e || e.name !== 'AbortError') showImage(blob); // إذا رفض المتصفح، نعرض الصورة للحفظ اليدوي
+      });
+      return;
+    }
+    if (mobile) { showImage(imgBlob); return; }
+    // الكمبيوتر: تنزيل مباشر
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(imgBlob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    toast('🖼️ انحفظت الصورة');
   });
 
   // جهاز مشترك (مثلاً جوال العيلة): شخص تاني يفتح بطاقته. البطاقة القديمة ما بتنحذف،
