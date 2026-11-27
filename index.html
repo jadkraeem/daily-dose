@@ -207,6 +207,12 @@ section { padding: 75px 6%; }
 
 footer { background: var(--dark); color: white; padding: 35px 6%; text-align: center; line-height: 1.8; }
 footer .logo { margin-bottom: 12px; }
+.social { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; margin: 15px 0 25px; }
+.social a { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: #e9ddca; transition: transform .25s; }
+.social a:hover, .social a:focus-visible { transform: translateY(-3px); }
+.social-ic { width: 54px; height: 54px; border-radius: 50%; background: #fffdf8; display: grid; place-items: center; box-shadow: 0 6px 16px -6px #000a, inset 0 0 0 2px #c9a45c55; }
+.social-ic img { width: 30px; height: 30px; object-fit: contain; }
+.social small { font-size: 12px; font-weight: 700; }
 footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
 
 /* ---------------- نافذة السلة ---------------- */
@@ -528,18 +534,19 @@ footer p { font-size: 14px; color: #d8cbb8; margin-bottom: 5px; }
       <p>⏰ <strong>ساعات العمل:</strong> 9 صباحًا - 12 منتصف الليل</p>
     </div>
 
-    <div style="display:flex; justify-content:center; gap:25px; margin-bottom: 25px; margin-top: 15px;">
-      <a href="https://wa.me/963962375457" target="_blank" title="تواصل معنا عبر واتساب">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width:35px; height:35px; transition:.3s; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.3));">
+    <!-- أيقونات التواصل: محفوظة داخل الموقع (icons/social) حتى ما تختفي إذا تعطّل موقع خارجي -->
+    <div class="social">
+      <a href="https://wa.me/963962375457" target="_blank" rel="noopener" title="تواصل معنا عبر واتساب">
+        <span class="social-ic"><img src="icons/social/whatsapp.svg" alt="" width="30" height="30" loading="lazy"></span><small>واتساب</small>
       </a>
-      <a href="https://maps.app.goo.gl/VxvBj4JAR9X2PbDj7?g_st=ic" target="_blank" title="موقعنا على خرائط جوجل">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Google_Maps_icon.svg" alt="Google Maps" style="width:35px; height:35px; transition:.3s; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.3));">
+      <a href="https://maps.app.goo.gl/VxvBj4JAR9X2PbDj7?g_st=ic" target="_blank" rel="noopener" title="موقعنا على خرائط جوجل">
+        <span class="social-ic"><img src="icons/social/google-maps.svg" alt="" width="30" height="30" loading="lazy"></span><small>موقعنا</small>
       </a>
-      <a href="https://instagram.com/daily_dose_cafesy" target="_blank" title="تابعنا على إنستغرام">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg" alt="Instagram" style="width:35px; height:35px; transition:.3s; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.3));">
+      <a href="https://instagram.com/daily_dose_cafesy" target="_blank" rel="noopener" title="تابعنا على إنستغرام">
+        <span class="social-ic"><img src="icons/social/instagram.svg" alt="" width="30" height="30" loading="lazy"></span><small>إنستغرام</small>
       </a>
-      <a href="https://facebook.com/daily_dose_cafesy" target="_blank" title="صفحتنا على فيسبوك">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook" style="width:35px; height:35px; transition:.3s; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.3));">
+      <a href="https://facebook.com/daily_dose_cafesy" target="_blank" rel="noopener" title="صفحتنا على فيسبوك">
+        <span class="social-ic"><img src="icons/social/facebook.svg" alt="" width="30" height="30" loading="lazy"></span><small>فيسبوك</small>
       </a>
     </div>
 
