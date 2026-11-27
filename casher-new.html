@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Daily Dose | Cashier & Admin Dashboard</title>
+<link rel="manifest" href="app-casher.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<meta name="theme-color" content="#064e3b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="كاشير Daily Dose">
+<script src="pwa.js" defer></script>
+
+<!-- استدعاء مكتبة Supabase والخطوط -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="qrcode.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --green: #064e3b;
+  --dark: #032e24;
+  --cream: #f7f1e7;
+  --beige: #e9ddca;
+  --gold: #c9a45c;
+  --text: #183b30;
+  --white: #fffdf8;
+  --panel-bg: #032e24;
+  --bg-dark: #021f18;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --success: #10b981;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Cairo', sans-serif;
+  background-color: var(--bg-dark);
+  color: #f7f1e7;
+  direction: rtl;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  margin: 0;
+}
+
+.app-wrapper {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  direction: rtl;
+}
+
+button { font-family: inherit; cursor: pointer; }
+
+/* القائمة الجانبية */
+.sidebar {
+  width: 280px;
+  background-color: var(--panel-bg);
+  padding: 20px 15px;
+  border-left: 2px solid rgba(247,241,231,.18);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: -5px 0 25px rgba(0,0,0,0.3);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  color: var(--gold);
+  font-size: 26px;
+  font-weight: bold;
+  direction: ltr;
+  text-align: center;
+}
+
+.logo small {
+  display: block;
+  text-align: center;
+  font-family: 'Cairo', sans-serif;
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: #f7f1e7;
+}
+
+.sidebar h1 {
+  text-align: center;
+  color: var(--gold);
+  font-size: 1.3rem;
+  margin-bottom: 5px;
+  border-bottom: 1px solid rgba(247,241,231,.18);
+  padding-bottom: 12px;
+}
+
+.nav-btn {
+  background: transparent;
+  color: #f7f1e7;
+  border: 1px solid rgba(247,241,231,.18);
+  padding: 10px 15px;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: bold;
+  text-align: right;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-btn:hover, .nav-btn.active {
+  background: var(--green);
+  border-color: var(--gold);
+  color: white;
+  transform: translateX(-4px);
+}
+
+/* المحتوى الرئيسي */
+.main-content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  background-color: var(--cream);
+  color: var(--text);
+}
+
+.section { display: none; animation: fadeIn 0.3s ease; }
+.section.active { display: block; }
+
+.section-title {
+  margin-top: 0;
+  color: var(--green);
+  font-size: 1.7rem;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--beige);
+  padding-bottom: 10px;
+}
+
+/* البطاقات والشبكات */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background-color: var(--white);
+  border-radius: 20px;
+  padding: 20px;
+  border-top: 5px solid var(--gold);
+  box-shadow: 0 8px 25px #49341b10;
+  transition: transform .3s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.card:hover { transform: translateY(-4px); }
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed #d8cbb8;
+  padding-bottom: 10px;
+  color: var(--green);
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.order-items {
+  margin-bottom: 15px;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.actions-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;}
+
+.action-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 10px;
+  border-radius: 25px;
+  border: none;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: 0.3s;
+}
+
+.btn-ready { background: var(--green); color: white; }
+.btn-ready:hover { background: var(--dark); }
+
+.btn-print { background: var(--beige); color: var(--dark); border: 1px solid var(--gold); }
+.btn-print:hover { background: var(--gold); color: white; }
+
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { opacity: 0.85; }
+
+.btn-warning { background: var(--warning); color: white; }
+.btn-success { background: var(--success); color: white; }
+
+/* لوحات الإدخال */
+.control-panel {
+  background: var(--white);
+  padding: 22px;
+  border-radius: 20px;
+  border: 1px solid #d8cbb8;
+  margin-bottom: 25px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: flex-end;
+  box-shadow: 0 5px 20px #49341b0a;
+}
+
+.input-group { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
+.input-group label { font-weight: 700; color: var(--green); font-size: 0.95rem; }
+
+.input-group input, .input-group select {
+  padding: 11px 16px;
+  border-radius: 25px;
+  border: 1px solid #d8cbb8;
+  background: var(--cream);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: .3s;
+}
+.input-group input:focus, .input-group select:focus { border-color: var(--gold); }
+
+.save-btn {
+  background: var(--gold);
+  color: var(--dark);
+  border: none;
+  padding: 11px 25px;
+  border-radius: 25px;
+  font-weight: 800;
+  font-size: 1rem;
+  transition: .3s;
+  height: 45px;
+}
+.save-btn:hover { background: #e0bd7c; transform: translateY(-2px); }
+
+/* صندوق تبديل الشبكة */
+.switch-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--white);
+  padding: 20px 25px;
+  border-radius: 20px;
+  border: 2px solid var(--gold);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+.badge-avail { background: #d1fae5; color: #065f46; }
+.badge-out { background: #fee2e2; color: #991b1b; }
+
+/* إحصائيات سريعة */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 25px;
+}
+.stat-box {
+  background: var(--green);
+  color: white;
+  padding: 22px;
+  border-radius: 20px;
+  text-align: center;
+  border-bottom: 5px solid var(--gold);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.stat-box h3 { font-size: 2.2rem; color: var(--gold); margin-top: 8px; direction: ltr; }
+.stat-box.highlight { background: var(--dark); border-bottom-color: var(--success); }
+.stat-box.highlight h3 { color: var(--success); }
+.stat-box.danger-box { background: var(--danger); border-bottom-color: #7f1d1d; }
+.stat-box.danger-box h3 { color: #fee2e2; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+#login-overlay{position:fixed;inset:0;background:var(--bg-dark);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:var(--panel-bg);padding:30px;border-radius:20px;border:2px solid var(--gold);width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.login-box input{padding:12px 16px;border-radius:25px;border:1px solid rgba(247,241,231,.18);background:#021f18;color:#fff;font-family:inherit;direction:ltr}
+#login-err{color:var(--danger);font-size:.9rem;min-height:1.2em}
+
+.ai-chat{background:var(--white);border:1px solid #d8cbb8;border-radius:20px;height:48vh;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.ai-msg{max-width:80%;padding:10px 16px;border-radius:18px;line-height:1.7;white-space:pre-wrap}
+.ai-msg.me{align-self:flex-start;background:var(--green);color:#fff}
+.ai-msg.bot{align-self:flex-end;background:var(--beige);color:var(--dark)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{background:var(--white);border:1px solid var(--gold);color:var(--green);border-radius:20px;padding:6px 14px;font-weight:700}
+
+.head-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.head-row select{padding:8px 16px;border-radius:20px;border:1px solid var(--gold);font-family:inherit;font-weight:bold}
+.panel{background:var(--white);border:1px solid #d8cbb8;border-radius:20px;padding:18px;margin-bottom:20px}
+.panel h3{color:var(--green);margin-bottom:12px}
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.bars{display:flex;align-items:flex-end;gap:3px;height:190px;direction:ltr}
+.bar-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:0}
+.bar{width:100%;background:var(--green);border-radius:5px 5px 0 0;min-height:2px}
+.bar-col small{font-size:9px;color:#887b68;margin-top:3px;white-space:nowrap}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th,.tbl td{padding:9px 12px;text-align:right;border-bottom:1px solid #eadfcc}
+.tbl th{background:var(--beige);color:var(--green)}
+.oos{display:inline-block;background:#fee2e2;color:#991b1b;border-radius:20px;padding:3px 12px;margin:3px;font-size:.85rem;font-weight:700}
+/* بطاقات الولاء */
+.loy-empty{color:#887b68;grid-column:1/-1;text-align:center;padding:24px}
+.loy-cam{background:var(--dark);border-radius:20px;padding:14px;margin-bottom:20px;text-align:center}
+.loy-cam video{width:100%;max-width:420px;border-radius:14px;display:block;margin:0 auto 10px}
+.loy-cam-hint{color:var(--beige);margin-bottom:10px;font-weight:700}
+.loy-switch{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--green);padding-bottom:10px}
+.loy-switch input{width:20px;height:20px;accent-color:var(--green)}
+.loy-stats{color:#887b68;font-weight:700}
+.loy-dots{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.loy-dot{width:28px;height:28px;border-radius:50%;border:2px dashed #c9a45c;display:grid;place-items:center;font-size:14px}
+.loy-dot.on{border-style:solid;background:var(--gold)}
+.loy-meta{color:#887b68;font-size:.9rem;line-height:1.7}
+.loy-ready{background:linear-gradient(120deg,var(--gold),#e3c88a);color:var(--dark);font-weight:800;border-radius:14px;padding:8px 12px;margin:6px 0;text-align:center}
+.loy-flash{animation:loyFlash .8s ease}
+@keyframes loyFlash{0%{box-shadow:0 0 0 0 #c9a45c}100%{box-shadow:0 0 0 14px transparent}}
+.loy-modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;z-index:9999;padding:16px}
+.loy-modal>div{background:var(--white);border-radius:22px;padding:22px;max-width:340px;width:100%;text-align:center}
+.loy-modal svg{width:220px;height:220px}
+.loy-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin:30px 0 12px}
+.loy-head h3,.loy-h3{color:var(--green);margin:0}
+.loy-h3{margin:34px 0 12px}
+.loy-h3 small{color:#887b68;font-size:.8rem;font-weight:600}
+.loy-settings{background:var(--white);border:1px solid #d8cbb8;border-radius:20px;padding:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:16px 18px;align-items:start;box-shadow:0 5px 20px #49341b0a}
+.loy-settings .input-group{min-width:0}
+.loy-settings small{color:#887b68;font-size:.8rem}
+.loy-settings textarea{padding:11px 16px;border-radius:18px;border:1px solid #d8cbb8;background:var(--cream);color:var(--text);font-family:inherit;font-size:.95rem;resize:vertical;outline:none}
+.loy-settings textarea:focus{border-color:var(--gold)}
+.loy-wide{grid-column:1/-1}
+.loy-settings .loy-switch{padding:0}
+.loy-new{border-color:var(--gold);animation:fadeIn .25s ease}
+.loy-tools{display:flex;gap:8px;margin-top:8px}
+.loy-tools .action-btn{background:transparent;border:1px solid #d8cbb8;color:var(--text)}
+.loy-tools .loy-del{color:var(--danger);border-color:#f3b4b4}
+.loy-tools .loy-del:hover{background:var(--danger);color:#fff}
+.loy-edit{display:grid;gap:10px;text-align:start}
+.loy-edit label{font-weight:700;color:var(--green);font-size:.9rem;display:grid;gap:4px}
+.loy-edit input{padding:10px 14px;border-radius:20px;border:1px solid #d8cbb8;background:var(--cream);font-family:inherit;font-size:16px}
+.loy-edit .row{display:flex;gap:8px}
+.loy-edit .row button{flex:1}
+.loy-meta .loy-when{display:block;font-size:.8rem}
+/* ===== الموبايل والتابلت الصغير ===== */
+.m-bar,.m-shade{display:none}
+@media (max-width: 860px){
+  .app-wrapper{flex-direction:column;height:100vh;height:100dvh}
+  .m-bar{display:flex;align-items:center;gap:12px;flex-shrink:0;background:var(--panel-bg);border-bottom:2px solid rgba(247,241,231,.18);
+    padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:5}
+  .m-menu{width:44px;height:44px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:22px;line-height:1;flex-shrink:0}
+  .m-menu:active{background:var(--green)}
+  .m-title{flex:1;min-width:0;color:#f7f1e7;font-weight:800;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-logo{font-size:19px;flex-shrink:0}
+  .sidebar{position:fixed;top:0;bottom:0;inset-inline-start:0;width:min(300px,86vw);z-index:1000;
+    transform:translateX(105%);transition:transform .28s ease;padding-top:calc(20px + env(safe-area-inset-top));padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  body.nav-open .sidebar{transform:none}
+  .m-shade{position:fixed;inset:0;background:#000a;z-index:999;opacity:0;pointer-events:none;transition:opacity .28s;display:block}
+  body.nav-open .m-shade{opacity:1;pointer-events:auto}
+  .nav-btn{padding:12px 15px;flex-shrink:0}
+  .nav-btn:hover,.nav-btn.active{transform:none}
+  .main-content{padding:16px 14px;padding-bottom:calc(24px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+  .section-title{font-size:1.3rem;margin-bottom:14px}
+  .grid-container{grid-template-columns:1fr;gap:14px}
+  .card{padding:16px}
+  .card:hover{transform:none}
+  .control-panel{padding:16px;gap:12px}
+  .input-group{min-width:100%}
+  .control-panel>.save-btn,.control-panel>button{flex:1 1 auto}
+  input,select,textarea{font-size:16px!important} /* بدون هيك الآيفون بيعمل زوم لما تكتب */
+  .stats-row{grid-template-columns:1fr 1fr;gap:10px}
+  .stat-box{padding:14px 10px}
+  .stat-box h3{font-size:1.45rem}
+  .two-col{grid-template-columns:1fr}
+  .panel{padding:14px;overflow-x:auto}
+  .tbl{display:block;overflow-x:auto;white-space:nowrap}
+  .switch-box{padding:14px}
+  .ai-chat{height:52dvh}
+  .ai-msg{max-width:92%}
+  .action-btn{padding:12px 10px}
+}
+@media print{.m-bar,.m-shade{display:none!important}html,body{overflow:visible!important;height:auto!important}.app-wrapper{display:block;height:auto}.sidebar,.control-panel,.head-row select{display:none!important}.main-content{overflow:visible;padding:0}}
+
+/* ===== تصميم PrimeView: زمردي ديلي دوز ===== */
+.nav-btn.active, .nav-btn:hover { background: var(--green); border-color: var(--gold); }
+.sidebar { border-left-color: rgba(201,164,92,.35); }
+.section-title { font-weight: 900; }
+</style>
+<meta name="robots" content="noindex">
+</head>
+<body>
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="logo">Daily Dose<small>CAFE & MORE</small></div>
+    <h3 style="color:var(--gold)">تسجيل دخول الإدارة</h3>
+    <input type="email" id="login-email" placeholder="البريد الإلكتروني" autocomplete="off">
+    <input type="password" id="login-pass" placeholder="كلمة المرور" autocomplete="new-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="login-err"></div>
+    <button class="save-btn" onclick="doLogin()">دخول</button>
+  </div>
+</div>
+
+<div class="app-wrapper">
+    <!-- شريط علوي للموبايل: زر القائمة + اسم القسم الحالي -->
+    <header class="m-bar">
+        <button class="m-menu" type="button" onclick="toggleNav()" aria-label="القائمة">☰</button>
+        <span class="m-title" id="m-title">🛒 الطلبات الواردة</span>
+        <div class="logo m-logo">Daily Dose</div>
+    </header>
+    <div class="m-shade" onclick="toggleNav(false)"></div>
+    <!-- القائمة الجانبية -->
+    <div class="sidebar">
+        <div class="logo">Daily Dose<small>CAFE & MORE</small></div>
+        <h1>لوحة الإدارة والكاشير ☕</h1>
+        <button class="nav-btn active" onclick="switchTab('orders', this)">🛒 الطلبات الواردة</button>
+        <button class="nav-btn" onclick="switchTab('loyalty', this)">🎁 بطاقات الولاء</button>
+        <button class="nav-btn" onclick="switchTab('menu', this)">🍔 إدارة المنيو والمخزون</button>
+        <button class="nav-btn" onclick="switchTab('tables', this)">🪑 إدارة الطاولات</button>
+        <button class="nav-btn" onclick="switchTab('promos', this)">📢 إدارة العروض</button>
+        <button class="nav-btn" onclick="switchTab('events', this)">📅 إدارة الفعاليات</button>
+        <button class="nav-btn" onclick="switchTab('wifi', this)">🛜 تتبع الشبكة (Wi-Fi)</button>
+        <button class="nav-btn" onclick="switchTab('reports', this)">📊 التقارير والمبيعات</button>
+        <button class="nav-btn" onclick="switchTab('jard', this)">📦 الجرد (يومي/أسبوعي/شهري)</button>
+        <button class="nav-btn" onclick="switchTab('staff', this)">👥 إدارة الموظفين</button>
+        <button class="nav-btn" onclick="switchTab('ai', this)">🤖 المساعد الذكي</button>
+        <button class="nav-btn" id="sound-btn" style="margin-top:auto" onclick="toggleSound()">🔔 الصوت: تشغيل</button>
+        <button class="nav-btn" style="border-color:var(--danger)" onclick="doLogout()">🚪 تسجيل الخروج</button>
+    </div>
+
+    <!-- المحتوى الرئيسي -->
+    <div class="main-content">
+        
+        <!-- 1. الطلبات الواردة -->
+        <div id="orders" class="section active">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                <h2 class="section-title" style="margin:0; border:none;">الطلبات الواردة من الزبائن</h2>
+                <select id="order-status-filter" onchange="loadOrders()" style="padding:8px 16px; border-radius:20px; border:1px solid var(--gold); font-family:inherit; font-weight:bold;">
+                    <option value="pending">⏳ قيد الانتظار (Pending)</option>
+                    <option value="preparing">👨‍🍳 قيد التحضير (المطبخ)</option>
+                    <option value="ready">✔️ جاهز ومكتمل (Ready)</option>
+                    <option value="cancelled">❌ طلبات ملغاة (Cancelled)</option>
+                </select>
+            </div>
+            <div class="grid-container" id="orders-container">
+                <h3 style="color: #887b68;">جاري الاتصال بالسيرفر وجلب الطلبات... ⏳</h3>
+            </div>
+        </div>
+
+        <!-- 2. إدارة المنيو والمخزون (products + categories) -->
+        <!-- بطاقات الولاء -->
+        <div id="loyalty" class="section">
+            <h2 class="section-title">🎁 بطاقات الولاء</h2>
+            <div class="control-panel">
+                <div class="input-group">
+                    <label for="loy-q">رمز البطاقة أو رقم جوال الزبون:</label>
+                    <input type="text" id="loy-q" placeholder="مثال: 7RZ5-4ZBQ-YK أو آخر 4 أرقام من الجوال" autocomplete="off" onkeydown="if(event.key==='Enter')loyFind()">
+                </div>
+                <button class="save-btn" onclick="loyFind()">🔎 بحث</button>
+                <button class="save-btn" id="loy-scan-btn" onclick="loyScan()">📷 مسح QR</button>
+                <button class="save-btn loy-add-btn" onclick="loyToggleNew()">➕ بطاقة جديدة</button>
+            </div>
+            <!-- إنشاء بطاقة لزبون من الكاشير -->
+            <div class="control-panel loy-new" id="loy-new" hidden>
+                <div class="input-group">
+                    <label for="loy-new-name">اسم الزبون:</label>
+                    <input type="text" id="loy-new-name" maxlength="60" placeholder="مثال: أحمد">
+                </div>
+                <div class="input-group">
+                    <label for="loy-new-phone">رقم جواله:</label>
+                    <input type="tel" id="loy-new-phone" dir="ltr" placeholder="09xx xxx xxx" onkeydown="if(event.key==='Enter')loyCreate()">
+                </div>
+                <button class="save-btn" onclick="loyCreate()">✓ إنشاء البطاقة</button>
+            </div>
+            <div id="loy-cam" class="loy-cam" hidden>
+                <video id="loy-video" playsinline muted></video>
+                <div class="loy-cam-hint">وجّه الكاميرا على رمز QR ببطاقة الزبون</div>
+                <button class="action-btn btn-danger" onclick="loyStopScan()">إلغاء</button>
+            </div>
+            <div class="grid-container" id="loy-results"><p class="loy-empty">امسح بطاقة الزبون أو اكتب رمزها أو رقمه ⬆️</p></div>
+
+            <!-- كل البطاقات -->
+            <div class="loy-head">
+                <h3>📋 كل البطاقات</h3>
+                <p class="loy-stats" id="loy-stats"></p>
+            </div>
+            <div class="control-panel">
+                <div class="input-group">
+                    <label for="loy-filter">بحث بالاسم:</label>
+                    <input type="text" id="loy-filter" placeholder="اكتب جزء من الاسم" oninput="loyListSoon()">
+                </div>
+                <div class="input-group" style="max-width:240px">
+                    <label for="loy-sort">الترتيب:</label>
+                    <select id="loy-sort" onchange="loyList(true)">
+                        <option value="last">آخر ختم</option>
+                        <option value="new">الأحدث تسجيلاً</option>
+                        <option value="most">الأكثر أختاماً</option>
+                        <option value="ready">جاهزين للهدية 🎁</option>
+                        <option value="gifts">الأكثر هدايا</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid-container" id="loy-all"></div>
+            <div style="text-align:center;margin-top:14px"><button class="save-btn" id="loy-more" hidden onclick="loyList(false)">عرض المزيد ⬇️</button></div>
+
+            <!-- الإعدادات -->
+            <h3 class="loy-h3">⚙️ إعدادات البطاقة <small>(للمدير)</small></h3>
+            <div class="loy-settings">
+                <div class="input-group">
+                    <label for="loy-needed">عدد الأختام للهدية</label>
+                    <input type="number" id="loy-needed" min="2" max="30" inputmode="numeric" lang="en">
+                    <small>بين 2 و 30</small>
+                </div>
+                <div class="input-group">
+                    <label for="loy-reward">الهدية</label>
+                    <input type="text" id="loy-reward" maxlength="60" placeholder="مثال: قهوة مجانية">
+                    <small>بتظهر للزبون: «باقيلك 3 أختام لـ…»</small>
+                </div>
+                <div class="input-group">
+                    <label for="loy-welcome">ختم ترحيبي عند التسجيل</label>
+                    <select id="loy-welcome">
+                        <option value="0">بلا ختم ترحيبي</option>
+                        <option value="1">ختم واحد 🎉</option>
+                        <option value="2">ختمين</option>
+                        <option value="3">3 أختام</option>
+                        <option value="4">4 أختام</option>
+                        <option value="5">5 أختام</option>
+                    </select>
+                    <small>الزبون الجديد بيبلّش بهالعدد</small>
+                </div>
+                <div class="input-group">
+                    <label for="loy-limit">أقصى أختام لنفس الزبون باليوم</label>
+                    <select id="loy-limit">
+                        <option value="0">بلا حد</option>
+                        <option value="1">ختم واحد</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                    </select>
+                    <small>بيمنع الختم الزيادة بالغلط أو بالتلاعب</small>
+                </div>
+                <div class="input-group loy-wide">
+                    <label for="loy-note">رسالة على بطاقة الزبون (اختياري)</label>
+                    <textarea id="loy-note" maxlength="200" rows="2" placeholder="مثال: الهدية لا تشمل الحلويات · الختم مع كل طلب فوق 20,000 ل.س"></textarea>
+                    <small><span id="loy-note-count">0</span>/200</small>
+                </div>
+                <label class="loy-switch"><input type="checkbox" id="loy-signup"> الزبون بيقدر يسجّل بنفسه من جواله</label>
+                <label class="loy-switch"><input type="checkbox" id="loy-active"> البطاقة شغّالة</label>
+                <button class="save-btn loy-wide" onclick="loySaveSettings()">💾 حفظ الإعدادات</button>
+            </div>
+        </div>
+
+        <div id="menu" class="section">
+            <h2 class="section-title">إضافة / تعديل عنصر في المنيو</h2>
+            <div class="control-panel">
+                <div class="input-group">
+                    <label>اسم الصنف:</label>
+                    <input type="text" id="item-name" placeholder="مثال: سبانيش لاتيه">
+                </div>
+                <div class="input-group">
+                    <label>القسم (التصنيف):</label>
+                    <select id="item-category-select">
+                        <option value="">جاري تحميل الأقسام...</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>السعر:</label>
+                    <input type="number" id="item-price" placeholder="مثال: 250">
+                </div>
+                <div class="input-group">
+                    <label>رابط الصورة (اختياري):</label>
+                    <input type="text" id="item-image" placeholder="https://...">
+                </div>
+                <button class="save-btn" id="save-menu-btn" onclick="addOrUpdateMenuItem()">+ إضافة للمنيو</button>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                <h2 class="section-title" style="margin:0; border:none;">عناصر المنيو الحالية والمخزون</h2>
+                <select id="menu-category-filter" onchange="renderFilteredProducts()" style="padding:8px 16px; border-radius:20px; border:1px solid var(--gold); font-family:inherit; font-weight:bold;">
+                    <option value="all">كل الأقسام</option>
+                </select>
+            </div>
+            <div class="grid-container" id="menu-container"></div>
+        </div>
+
+        <!-- 3. إدارة الطاولات (tables) -->
+        <div id="tables" class="section">
+            <h2 class="section-title">إدارة طاولات الكافتيريا</h2>
+            <div class="control-panel">
+                <div class="input-group" style="flex:2">
+                    <label>رابط صفحة المنيو للزبائن (الذي يفتحه الـ QR):</label>
+                    <input type="text" id="menu-url-input" placeholder="https://jadkraeem.github.io/daily-dose/" style="direction:ltr">
+                </div>
+                <button class="save-btn" onclick="saveMenuUrl()">حفظ الرابط وتحديث الـ QR</button>
+            </div>
+            <div class="control-panel">
+                <div class="input-group">
+                    <label>رقم الطاولة الجديدة:</label>
+                    <input type="number" id="table-num-input" placeholder="مثال: 26">
+                </div>
+                <button class="save-btn" onclick="addTable()">+ إضافة طاولة</button>
+            </div>
+            <div class="grid-container" id="tables-container"></div>
+        </div>
+
+        <!-- 4. إدارة العروض الإعلانية (promotions) -->
+        <div id="promos" class="section">
+            <h2 class="section-title">إدارة العروض الإعلانية (البانر)</h2>
+            <div class="control-panel">
+                <div class="input-group">
+                    <label>نص العرض الإعلاني الجديد:</label>
+                    <input type="text" id="promo-text" placeholder="مثال: خصم 20% على الموهيتو اليوم!">
+                </div>
+                <button class="save-btn" onclick="savePromo()">نشر العرض الجديد</button>
+            </div>
+            <h3 style="margin-bottom: 15px; color: var(--green);">العروض الحالية والسابقة:</h3>
+            <div class="grid-container" id="promos-list"></div>
+        </div>
+
+        <!-- 5. إدارة الفعاليات (events) -->
+        <div id="events" class="section">
+            <h2 class="section-title">إدارة الفعاليات والأمسيات</h2>
+            <div class="control-panel">
+                <div class="input-group">
+                    <label>اسم الفعالية:</label>
+                    <input type="text" id="event-title" placeholder="مثال: سهرة طرب وعود">
+                </div>
+                <div class="input-group">
+                    <label>الوصف / التوقيت:</label>
+                    <input type="text" id="event-desc" placeholder="مثال: الخميس القادم 9:00 مساءً">
+                </div>
+                <div class="input-group">
+                    <label>تاريخ الفعالية:</label>
+                    <input type="date" id="event-date">
+                </div>
+                <button class="save-btn" onclick="saveEvent()">+ إضافة الفعالية</button>
+            </div>
+            <h3 style="margin-bottom: 15px; color: var(--green);">الفعاليات المسجلة:</h3>
+            <div class="grid-container" id="events-list"></div>
+        </div>
+
+        <!-- 6. إعدادات تتبع الشبكة (restaurant_settings) -->
+        <div id="wifi" class="section">
+            <h2 class="section-title">إعدادات الحماية وتتبع شبكة الواي فاي (IP)</h2>
+            
+            <div class="switch-box">
+                <div>
+                    <h3 style="color:var(--green); margin-bottom:5px;">حالة تتبع شبكة الواي فاي للمنيو</h3>
+                    <p style="color:#666; font-size:0.95rem;">عند التفعيل، لن يتمكن الزبون من الطلب إلا إذا كان متصلاً بواي فاي الكافتيريا. عند الإيقاف، يمكن الطلب من أي شبكة.</p>
+                </div>
+                <button id="wifi-toggle-btn" class="save-btn" onclick="toggleWifiTracking()">جاري التحميل...</button>
+            </div>
+
+            <div class="control-panel">
+                <div class="input-group">
+                    <label>عنوان الـ IP لراوتر الكافتيريا (يمكن عدة عناوين مفصولة بفاصلة):</label>
+                    <input type="text" id="allowed-ip-input" placeholder="مثال: 109.224.242.121">
+                </div>
+                <button class="save-btn" onclick="saveAllowedIP()">حفظ الـ IP فوراً</button>
+                <button class="action-btn btn-print" style="flex:0; white-space:nowrap; height:45px; padding:0 20px;" onclick="detectCurrentIP()">🔍 جلب الـ IP الحالي تلقائياً</button>
+            </div>
+        </div>
+
+        <!-- 7. التقارير والمبيعات -->
+        <div id="reports" class="section">
+            <div class="head-row">
+                <h2 class="section-title" style="margin:0;border:none">📊 التقارير والمبيعات</h2>
+                <select id="rep-range" onchange="loadReports()">
+                    <option value="1">اليوم</option><option value="7" selected>آخر 7 أيام</option>
+                    <option value="30">آخر 30 يوماً</option><option value="90">آخر 90 يوماً</option>
+                </select>
+            </div>
+            <div class="stats-row" id="rep-kpis"></div>
+            <div class="two-col">
+                <div class="panel"><h3>الإيراد اليومي (ل.س)</h3><div class="bars" id="rep-days"></div></div>
+                <div class="panel"><h3>ساعات الذروة (عدد الطلبات)</h3><div class="bars" id="rep-hours"></div></div>
+            </div>
+            <div class="panel" style="overflow-x:auto"><h3>🔥 الأكثر مبيعاً</h3><table class="tbl" id="rep-top"></table></div>
+        </div>
+
+        <!-- الجرد -->
+        <div id="jard" class="section">
+            <h2 class="section-title">📦 الجرد</h2>
+            <div class="control-panel">
+                <div class="input-group"><label>الفترة:</label>
+                    <select id="jard-period" onchange="loadJard()">
+                        <option value="day">يومي</option><option value="week">أسبوعي (سبت – جمعة)</option><option value="month">شهري</option>
+                    </select></div>
+                <div class="input-group"><label>التاريخ:</label><input type="date" id="jard-date" onchange="loadJard()"></div>
+                <button class="save-btn" onclick="exportJardCSV()">⬇️ تصدير Excel (CSV)</button>
+                <button class="save-btn" style="background:var(--beige)" onclick="window.print()">🖨️ طباعة</button>
+            </div>
+            <div class="stats-row" id="jard-summary"></div>
+            <div class="panel" style="overflow-x:auto"><h3>الأصناف المباعة</h3><table class="tbl" id="jard-table"></table></div>
+            <div class="panel"><h3>⚠️ أصناف نفدت من المخزون</h3><div id="jard-oos"></div></div>
+        </div>
+
+        <!-- المساعد الذكي -->
+        <div id="ai" class="section">
+            <h2 class="section-title">🤖 المساعد الذكي للكاشير</h2>
+            <div class="chips">
+                <button class="chip" onclick="askAI('لخّص لي مبيعات اليوم')">📊 ملخص اليوم</button>
+                <button class="chip" onclick="askAI('شو أكتر الأصناف مبيعاً اليوم؟')">🔥 الأكثر مبيعاً</button>
+                <button class="chip" onclick="askAI('في طلبات متأخرة؟')">⏱️ الطلبات المتأخرة</button>
+                <button class="chip" onclick="askAI('اقترح عرض مناسب بناءً على مبيعات اليوم')">💡 اقتراح عرض</button>
+            </div>
+            <div class="ai-chat" id="ai-chat"></div>
+            <div class="control-panel">
+                <div class="input-group"><input type="text" id="ai-input" placeholder="اسأل عن المبيعات أو الطلبات..." onkeydown="if(event.key==='Enter')askAI()"></div>
+                <button class="save-btn" id="ai-send" onclick="askAI()">إرسال</button>
+            </div>
+        </div>
+
+        <!-- 8. إدارة الموظفين (staff_members) -->
+        <div id="staff" class="section">
+            <h2 class="section-title">إدارة الموظفين وصلاحيات الكاشير</h2>
+            <div class="control-panel">
+                <div class="input-group">
+                    <label>اسم الموظف:</label>
+                    <input type="text" id="staff-name" placeholder="مثال: أحمد محمد">
+                </div>
+                <div class="input-group">
+                    <label>الدور الوظيفي:</label>
+                    <select id="staff-role">
+                        <option value="مدير عام">مدير عام</option>
+                        <option value="كاشير">كاشير</option>
+                        <option value="كابتن صالة">كابتن صالة</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>رمز الدخول (PIN):</label>
+                    <input type="text" id="staff-pin" placeholder="مثال: 1234">
+                </div>
+                <button class="save-btn" onclick="addStaff()">+ إضافة موظف</button>
+            </div>
+            <div class="grid-container" id="staff-container"></div>
+        </div>
+
+    </div>
+</div>
+
+
+<script>
+    const restaurantId = 'eb399736-4a86-4109-86c5-798720f6d242';
+    window.dbClient = null;
+    let knownOrderIds = new Set();
+    let isFirstLoad = true;
+    let currentWifiStatus = false;
+    let categoriesMap = {};
+    let cachedProducts = [];
+    let currentEditProductId = null; // متغير لحفظ الـ ID عند التعديل
+    window.__printJobs = {}; // بيانات الطباعة لكل طلب (آمنة ضد حقن الأكواد)
+
+    const alertSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+    function getDB() {
+        if (!window.dbClient && window.supabase) {
+            window.dbClient = window.supabase.createClient(
+                'https://zvwhiqjmydyyswwqmcwy.supabase.co', 
+                'sb_publishable_w0-bscTi4h8ExH_BQD_3Ig_tGUx7qUX'
+            );
+        }
+        return window.dbClient;
+    }
+
+    function formatTableLabel(tableVal) {
+        const val = (tableVal || '').toString().trim();
+        if (!val || val === 'غير معروف' || val === 'زبون عام') {
+            return 'زبون عام';
+        }
+        return `طاولة: ${val}`;
+    }
+
+    // فتح/إغلاق القائمة الجانبية على الموبايل
+    window.toggleNav = function(open) {
+        const on = open === undefined ? !document.body.classList.contains('nav-open') : open;
+        document.body.classList.toggle('nav-open', on);
+    };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleNav(false); });
+
+    window.switchTab = function(tabId, btn) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        // الموبايل: اسم القسم بالشريط العلوي، وسكّر القائمة، وارجع لأول الصفحة
+        document.getElementById('m-title').textContent = btn.textContent.trim();
+        toggleNav(false);
+        document.querySelector('.main-content').scrollTop = 0;
+
+        if(tabId === 'orders') loadOrders();
+        if(tabId === 'menu') loadMenu();
+        if(tabId === 'tables') loadTables();
+        if(tabId === 'promos') loadPromos();
+        if(tabId === 'events') loadEvents();
+        if(tabId === 'wifi') loadWifiSettings();
+        if(tabId === 'reports') loadReports();
+        if(tabId === 'jard') loadJard();
+        if(tabId === 'staff') loadStaff();
+        if(tabId === 'loyalty') loadLoyalty();
+        if(tabId !== 'loyalty') loyStopScan();
+    };
+
+    /* ================= بطاقات الولاء ================= */
+    // كل العمليات عبر دوال القاعدة (loyalty_*) التي تتحقق أن المستخدم موظف؛ لا كتابة مباشرة.
+    const LOY_CODE = /^[A-HJ-NP-Z2-9]{10}$/;
+    let loyStream = null, loyTimer = null;
+
+    // يقبل: رمز البطاقة (مع أو بدون شرطات)، رابط البطاقة الممسوح من QR، أو رقم جوال
+    function loyNorm(raw) {
+        const s = String(raw || '').trim();
+        const fromUrl = s.match(/[?&]c=([A-Za-z0-9]{10})/);
+        if (fromUrl) return fromUrl[1].toUpperCase();
+        const compact = s.toUpperCase().replace(/[\s-]/g, '');
+        if (LOY_CODE.test(compact) && /[A-Z]/.test(compact)) return compact;
+        return s;
+    }
+
+    // إعدادات البطاقة الحالية (عدد الأختام والهدية) لعرض قائمة البطاقات
+    let loySettings = { stamps_needed: 8, reward: 'قهوة مجانية' };
+    const loyCards = new Map(); // آخر نسخة من كل بطاقة معروضة (للتعديل)
+
+    function loyWhen(t) {
+        if (!t) return 'لسا ما أخد ختم';
+        return 'آخر ختم: ' + new Date(t).toLocaleString('ar-SY-u-nu-latn', { timeZone: 'Asia/Damascus', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    }
+
+    function loyCardHtml(c) {
+        loyCards.set(c.code, c);
+        const have = Math.min(c.stamps, c.needed);
+        let dots = '';
+        for (let i = 0; i < c.needed; i++) dots += `<span class="loy-dot ${i < have ? 'on' : ''}">${i === c.needed - 1 ? '🎁' : '☕'}</span>`;
+        const ready = c.stamps >= c.needed;
+        const code = esc(c.code);
+        return `<div class="card" data-code="${code}">
+            <div class="card-header"><span>👤 ${esc(c.name)}</span><span style="direction:ltr">${esc(c.phone || '')}</span></div>
+            <div class="loy-meta">الأختام: <b>${c.stamps} / ${c.needed}</b> · الهدايا المستلمة: ${c.rewards_redeemed}<br>الرمز: <span style="direction:ltr;display:inline-block">${code}</span>
+                <span class="loy-when">${esc(loyWhen(c.last_stamp_at))}</span></div>
+            <div class="loy-dots">${dots}</div>
+            ${ready ? `<div class="loy-ready">🎁 جاهز ياخد ${esc(c.reward)}</div>` : ''}
+            <div class="actions-row">
+                <button class="action-btn btn-ready" onclick="loyAct('${code}','stamp')">+ ختم</button>
+                <button class="action-btn btn-print" onclick="loyAct('${code}','unstamp')">↩ تراجع</button>
+                <button class="action-btn btn-success" ${ready ? '' : 'disabled style="opacity:.45"'} onclick="loyAct('${code}','redeem')">🎁 استبدال</button>
+            </div>
+            <div class="actions-row"><button class="action-btn btn-print" onclick="loyShowLink('${code}')">📲 رابط البطاقة للزبون</button></div>
+            <div class="loy-tools">
+                <button class="action-btn" onclick="loyEdit('${code}')">✏️ تعديل</button>
+                <button class="action-btn loy-del" onclick="loyDelete('${code}')">🗑️ حذف</button>
+            </div>
+        </div>`;
+    }
+
+    // تحديث كل نسخ البطاقة على الشاشة (نتيجة البحث + القائمة)
+    function loyReplace(c, flash) {
+        document.querySelectorAll(`#loyalty .card[data-code="${c.code}"]`).forEach(el => {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = loyCardHtml(c);
+            const fresh = tmp.firstElementChild;
+            if (flash) fresh.classList.add('loy-flash');
+            el.replaceWith(fresh);
+        });
+    }
+
+    window.loyFind = async function(raw) {
+        const db = getDB();
+        const { data: sess } = await db.auth.getSession();
+        if (!sess.session) return;
+        const q = loyNorm(raw ?? document.getElementById('loy-q').value);
+        const box = document.getElementById('loy-results');
+        if (!q) { box.innerHTML = '<p class="loy-empty">اكتب رمز البطاقة أو رقم الجوال</p>'; return; }
+        box.innerHTML = '<p class="loy-empty">جاري البحث…</p>';
+        const { data, error } = await db.rpc('loyalty_find', { p_query: q });
+        if (error) { box.innerHTML = `<p class="loy-empty" style="color:var(--danger)">${esc(error.message)}</p>`; return; }
+        box.innerHTML = data && data.length ? data.map(loyCardHtml).join('') : '<p class="loy-empty">ما في بطاقة بهالرمز أو الرقم</p>';
+    };
+
+    window.loyAct = async function(code, action) {
+        const db = getDB();
+        const els = document.querySelectorAll(`#loyalty .card[data-code="${code}"]`);
+        const old = loyCards.get(code);
+        if (action === 'redeem' && !confirm(`تأكيد استبدال الهدية لـ ${old ? old.name : 'الزبون'}؟`)) return;
+        const fn = { stamp: 'loyalty_stamp', unstamp: 'loyalty_unstamp', redeem: 'loyalty_redeem' }[action];
+        const args = action === 'stamp' ? { p_code: code, p_count: 1 } : { p_code: code };
+        const lock = on => els.forEach(el => el.querySelectorAll('button').forEach(b => b.disabled = on));
+        lock(true);
+        const { data, error } = await db.rpc(fn, args);
+        if (error) { alert(error.message); lock(false); return; }
+        // بعض الدوال ما بترجّع آخر ختم: منحافظ على القديم
+        if (old && !('last_stamp_at' in data)) data.last_stamp_at = action === 'stamp' ? new Date().toISOString() : old.last_stamp_at;
+        loyReplace(data, true);
+        loadLoyaltyStats();
+    };
+
+    // رابط البطاقة كـ QR: الزبون يمسحه بجواله الجديد فترجع بطاقته
+    window.loyShowLink = function(code) {
+        const url = new URL('loyalty.html?c=' + code, location.href).href;
+        const qr = window.qrcode(0, 'M'); qr.addData(url); qr.make();
+        const m = document.createElement('div');
+        m.className = 'loy-modal';
+        m.innerHTML = `<div><h3 style="color:var(--green);margin-bottom:6px">📲 بطاقة الزبون</h3>
+            <p style="color:#887b68;margin-bottom:10px">خلّي الزبون يمسح الرمز بكاميرا جواله، فبترجعله بطاقته بأختامها</p>
+            ${qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true })}
+            <button class="save-btn" style="width:100%;margin-top:12px">تم</button></div>`;
+        m.addEventListener('click', e => { if (e.target === m || e.target.closest('button')) m.remove(); });
+        document.body.appendChild(m);
+    };
+
+    // قارئ QR: نستعمل قارئ المتصفح المدمج إذا موجود (أندرويد)، وإلا مكتبة jsQR (آيفون، كروم ويندوز…)
+    async function loyQrReader() {
+        if ('BarcodeDetector' in window) {
+            try {
+                const fmts = await BarcodeDetector.getSupportedFormats();
+                if (fmts.includes('qr_code')) {
+                    const d = new BarcodeDetector({ formats: ['qr_code'] });
+                    return async v => { const f = await d.detect(v); return f.length ? f[0].rawValue : null; };
+                }
+            } catch (e) { /* ننتقل للمكتبة */ }
+        }
+        if (!window.jsQR) {
+            await new Promise((ok, fail) => {
+                const s = document.createElement('script');
+                s.src = 'jsqr.js'; s.onload = ok; s.onerror = fail;
+                document.head.appendChild(s);
+            });
+        }
+        const cv = document.createElement('canvas');
+        const ctx = cv.getContext('2d', { willReadFrequently: true });
+        return async v => {
+            if (!v.videoWidth) return null;
+            const scale = Math.min(1, 640 / v.videoWidth); // تصغير للسرعة
+            cv.width = Math.round(v.videoWidth * scale); cv.height = Math.round(v.videoHeight * scale);
+            ctx.drawImage(v, 0, 0, cv.width, cv.height);
+            const img = ctx.getImageData(0, 0, cv.width, cv.height);
+            const r = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+            return r ? r.data : null;
+        };
+    }
+
+    window.loyScan = async function() {
+        if (loyStream) return;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('هالمتصفح ما بيسمح بالكاميرا. افتح لوحة الكاشير من Safari أو Chrome مباشرة، أو اكتب الرمز الظاهر تحت الـ QR.');
+            document.getElementById('loy-q').focus();
+            return;
+        }
+        const btn = document.getElementById('loy-scan-btn');
+        btn.disabled = true;
+        try {
+            loyStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+            const v = document.getElementById('loy-video');
+            v.setAttribute('playsinline', ''); v.muted = true; // ضروري للآيفون
+            v.srcObject = loyStream;
+            document.getElementById('loy-cam').hidden = false;
+            await v.play();
+            document.getElementById('loy-cam').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const read = await loyQrReader();
+            let busy = false;
+            loyTimer = setInterval(async () => {
+                if (busy || !loyStream) return;
+                busy = true;
+                try {
+                    const val = await read(v);
+                    if (val) {
+                        loyStopScan();
+                        if (navigator.vibrate) navigator.vibrate(80);
+                        document.getElementById('loy-q').value = loyNorm(val);
+                        loyFind(val);
+                    }
+                } catch (e) { /* إطار غير جاهز */ }
+                busy = false;
+            }, 250);
+        } catch (e) {
+            loyStopScan();
+            const denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
+            alert(denied
+                ? 'الكاميرا ممنوعة. بالآيفون: الإعدادات ← Safari ← الكاميرا ← «السماح»، أو اكبس «aA» بشريط العنوان ← إعدادات الموقع ← الكاميرا ← سماح. وبعدين جرّب مرة تانية.'
+                : 'ما قدرنا نفتح الكاميرا. سكّر أي تطبيق تاني عم يستعمل الكاميرا وجرّب مرة تانية، أو اكتب الرمز.');
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    window.loyStopScan = function() {
+        if (loyTimer) { clearInterval(loyTimer); loyTimer = null; }
+        if (loyStream) { loyStream.getTracks().forEach(t => t.stop()); loyStream = null; }
+        const cam = document.getElementById('loy-cam');
+        if (cam) cam.hidden = true;
+    };
+
+    async function loadLoyaltyStats() {
+        const db = getDB();
+        const { count } = await db.from('loyalty_cards').select('id', { count: 'exact', head: true });
+        const { data: rows } = await db.from('loyalty_cards').select('rewards_redeemed');
+        const gifts = (rows || []).reduce((s, r) => s + (r.rewards_redeemed || 0), 0);
+        document.getElementById('loy-stats').textContent = `عدد البطاقات: ${count ?? 0} · الهدايا المستلمة: ${gifts}`;
+    }
+
+    async function loadLoyalty() {
+        const db = getDB();
+        const { data: sess } = await db.auth.getSession();
+        if (!sess.session) return;
+        const { data: s } = await db.from('loyalty_settings').select('*').eq('restaurant_id', restaurantId).maybeSingle();
+        if (s) {
+            loySettings = s;
+            const set = (id, v) => { const el = document.getElementById(id); if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? ''; };
+            set('loy-needed', s.stamps_needed); set('loy-reward', s.reward); set('loy-active', s.active);
+            set('loy-welcome', String(s.welcome_stamps ?? 0)); set('loy-limit', String(s.daily_limit ?? 0));
+            set('loy-signup', s.allow_signup ?? true); set('loy-note', s.card_note ?? '');
+            loyNoteCount();
+        }
+        loadLoyaltyStats();
+        loyList(true);
+        if (matchMedia('(min-width: 861px)').matches) document.getElementById('loy-q').focus(); // بالجوال ما منفتح الكيبورد لحاله
+    }
+
+    function loyNoteCount() { document.getElementById('loy-note-count').textContent = document.getElementById('loy-note').value.length; }
+    document.getElementById('loy-note')?.addEventListener('input', loyNoteCount);
+
+    window.loySaveSettings = async function() {
+        const db = getDB();
+        const v = id => document.getElementById(id);
+        // إيقاف البطاقة بيمنع الزبائن من التسجيل ومن فتح بطاقاتهم: نطلب تأكيد
+        if (!v('loy-active').checked &&
+            !confirm('⚠️ «البطاقة شغّالة» مو معلّمة.\nإذا حفظت هيك، الزبائن ما رح يقدروا يسجّلوا ولا يرجّعوا بطاقاتهم.\n\nمتأكد بدك توقف بطاقة الولاء؟')) return;
+        const { data, error } = await db.rpc('loyalty_update_settings', {
+            p_needed: Number(v('loy-needed').value),
+            p_reward: v('loy-reward').value,
+            p_active: v('loy-active').checked,
+            p_welcome: Number(v('loy-welcome').value),
+            p_daily_limit: Number(v('loy-limit').value),
+            p_allow_signup: v('loy-signup').checked,
+            p_note: v('loy-note').value
+        });
+        if (error) { alert(error.message); return; }
+        loySettings = data;
+        alert('✓ تم حفظ إعدادات البطاقة');
+        loyList(true); // عدد الأختام ممكن يكون تغيّر
+    };
+
+    // ===== إنشاء بطاقة من الكاشير =====
+    window.loyToggleNew = function() {
+        const box = document.getElementById('loy-new');
+        box.hidden = !box.hidden;
+        if (!box.hidden) document.getElementById('loy-new-name').focus();
+    };
+    window.loyCreate = async function() {
+        const name = document.getElementById('loy-new-name').value.trim();
+        const phone = document.getElementById('loy-new-phone').value.trim();
+        if (name.length < 2) { alert('اكتب اسم الزبون.'); return; }
+        if (phone.replace(/\D/g, '').length < 7) { alert('اكتب رقم جوال الزبون.'); return; }
+        const { data, error } = await getDB().rpc('loyalty_staff_create', { p_name: name, p_phone: phone });
+        if (error) { alert(error.message.replace('اكبس «عندي بطاقة» واكتب نفس اسمك ورقمك.', 'ابحث عنه برقمه.')); return; }
+        document.getElementById('loy-new-name').value = '';
+        document.getElementById('loy-new-phone').value = '';
+        document.getElementById('loy-new').hidden = true;
+        document.getElementById('loy-results').innerHTML = loyCardHtml(data);
+        document.querySelector('#loy-results .card').classList.add('loy-flash');
+        loadLoyaltyStats(); loyList(true);
+        loyShowLink(data.code); // الزبون بيمسح الرمز فبتصير البطاقة على جواله
+    };
+
+    // ===== كل البطاقات =====
+    const LOY_PAGE = 24;
+    let loyOffset = 0, loyListTimer = null;
+    window.loyListSoon = function() { clearTimeout(loyListTimer); loyListTimer = setTimeout(() => loyList(true), 350); };
+    window.loyList = async function(reset) {
+        const db = getDB();
+        const box = document.getElementById('loy-all'), more = document.getElementById('loy-more');
+        if (reset) { loyOffset = 0; box.innerHTML = '<p class="loy-empty">جاري التحميل…</p>'; }
+        const sort = document.getElementById('loy-sort').value;
+        const f = document.getElementById('loy-filter').value.trim().replace(/[%_,()*]/g, '');
+        let q = db.from('loyalty_cards').select('code,name,phone,stamps,rewards_redeemed,last_stamp_at,created_at');
+        if (f) q = q.ilike('name', `%${f}%`);
+        if (sort === 'ready') q = q.gte('stamps', loySettings.stamps_needed);
+        q = sort === 'new' ? q.order('created_at', { ascending: false })
+          : sort === 'most' ? q.order('stamps', { ascending: false }).order('last_stamp_at', { ascending: false, nullsFirst: false })
+          : sort === 'gifts' ? q.order('rewards_redeemed', { ascending: false }).order('stamps', { ascending: false })
+          : q.order('last_stamp_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
+        const { data, error } = await q.range(loyOffset, loyOffset + LOY_PAGE - 1);
+        if (error) { box.innerHTML = `<p class="loy-empty" style="color:var(--danger)">${esc(error.message)}</p>`; return; }
+        const html = (data || []).map(r => loyCardHtml({ ...r, needed: loySettings.stamps_needed, reward: loySettings.reward })).join('');
+        if (reset) box.innerHTML = html || `<p class="loy-empty">${f || sort === 'ready' ? 'ما في بطاقات بهالبحث' : 'لسا ما في بطاقات'}</p>`;
+        else box.insertAdjacentHTML('beforeend', html);
+        loyOffset += (data || []).length;
+        more.hidden = (data || []).length < LOY_PAGE;
+    };
+
+    // ===== تعديل بطاقة (المدير) =====
+    window.loyEdit = function(code) {
+        const c = loyCards.get(code);
+        if (!c) return;
+        const m = document.createElement('div');
+        m.className = 'loy-modal';
+        m.innerHTML = `<div><h3 style="color:var(--green);margin-bottom:12px">✏️ تعديل البطاقة</h3>
+            <div class="loy-edit">
+                <label>الاسم<input id="loy-e-name" maxlength="60"></label>
+                <label>رقم الجوال<input id="loy-e-phone" dir="ltr" inputmode="tel"></label>
+                <label>عدد الأختام (الهدية عند ${c.needed})<input id="loy-e-stamps" type="number" min="0" max="100" inputmode="numeric" lang="en"></label>
+                <div class="row"><button class="save-btn" data-act="save">💾 حفظ</button><button class="action-btn btn-print" data-act="close">إلغاء</button></div>
+            </div></div>`;
+        m.querySelector('#loy-e-name').value = c.name;
+        m.querySelector('#loy-e-phone').value = c.phone || '';
+        m.querySelector('#loy-e-stamps').value = c.stamps;
+        m.addEventListener('click', async e => {
+            const act = e.target.closest('[data-act]')?.dataset.act;
+            if (e.target === m || act === 'close') { m.remove(); return; }
+            if (act !== 'save') return;
+            e.target.disabled = true;
+            const { data, error } = await getDB().rpc('loyalty_edit_card', {
+                p_code: code,
+                p_name: m.querySelector('#loy-e-name').value,
+                p_phone: m.querySelector('#loy-e-phone').value,
+                p_stamps: Number(m.querySelector('#loy-e-stamps').value)
+            });
+            e.target.disabled = false;
+            if (error) { alert(error.message); return; }
+            m.remove();
+            loyReplace(data, true);
+            loadLoyaltyStats();
+        });
+        document.body.appendChild(m);
+        m.querySelector('#loy-e-name').focus();
+    };
+
+    // ===== حذف بطاقة (المدير) — تأكيد مرتين لأنو ما في رجعة =====
+    window.loyDelete = async function(code) {
+        const c = loyCards.get(code);
+        const name = c ? c.name : code;
+        if (!confirm(`🗑️ حذف بطاقة «${name}»؟\n\nرح تنحذف البطاقة وكل أختامها وسجلها نهائياً، وما في رجعة.`)) return;
+        const typed = prompt(`للتأكيد، اكتب كلمة: حذف`);
+        if ((typed || '').trim() !== 'حذف') { alert('ما انحذفت البطاقة.'); return; }
+        const { error } = await getDB().rpc('loyalty_delete_card', { p_code: code });
+        if (error) { alert(error.message); return; }
+        document.querySelectorAll(`#loyalty .card[data-code="${code}"]`).forEach(el => el.remove());
+        loyCards.delete(code);
+        loadLoyaltyStats();
+        alert(`✓ انحذفت بطاقة «${name}»`);
+    };
+
+    /* ================= 1. إدارة الطلبات الواردة ================= */
+    async function loadOrders() {
+        const db = getDB();
+        if (!db) { setTimeout(loadOrders, 400); return; }
+        const { data: sess } = await db.auth.getSession();
+        if (!sess.session) return; // لا نجلب الطلبات قبل تسجيل الدخول
+
+        const statusFilter = document.getElementById('order-status-filter')?.value || 'pending';
+
+        try {
+            const { data: orders, error } = await db
+                .from('orders')
+                .select('*')
+                .eq('restaurant_id', restaurantId)
+                .eq('status', statusFilter)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            const container = document.getElementById('orders-container');
+
+            if (!orders || orders.length === 0) {
+                container.innerHTML = `<h3 style="color: #887b68; width:100%;">لا توجد طلبات في هذا القسم حالياً ☕</h3>`;
+                isFirstLoad = false;
+                return;
+            }
+
+            container.innerHTML = '';
+            let hasNewOrder = false;
+
+            orders.forEach(order => {
+                if (statusFilter === 'pending' && !knownOrderIds.has(order.id)) {
+                    knownOrderIds.add(order.id);
+                    hasNewOrder = true;
+                }
+
+                let itemsText = '';
+                let itemsForPrint = '';
+                let calculatedTotal = parseFloat(order.total_price) || 0;
+
+                if(order.items && Array.isArray(order.items)) {
+                    let sumFromItems = 0;
+                    order.items.forEach(item => {
+                        const qty = parseInt(item.qty) || 1;
+                        const itemPrice = parseFloat(item.price) || 0;
+                        sumFromItems += itemPrice * qty;
+
+                        let noteHTML = item.note ? `<br><small style="color:#c9a45c; font-weight:bold;">ملاحظة: ${esc(item.note)}</small>` : '';
+                        let priceHTML = itemPrice > 0 ? ` <small style="color:#666;">(${itemPrice * qty} ل.س)</small>` : '';
+                        itemsText += `<div style="margin-bottom: 8px; border-bottom: 1px dashed #eee; padding-bottom: 4px;">🔹 ${esc(item.name)} <strong style="color:var(--green);">(الكمية: ${qty})</strong>${priceHTML}${noteHTML}</div>`;
+                        itemsForPrint += `<div>${esc(item.name)} x${qty} ${itemPrice > 0 ? '- ' + (itemPrice * qty) + ' ل.س' : ''} ${item.note ? '('+esc(item.note)+')' : ''}</div>`;
+                    });
+                    if (calculatedTotal === 0 && sumFromItems > 0) {
+                        calculatedTotal = sumFromItems;
+                    }
+                }
+
+                if (calculatedTotal > 0) {
+                    itemsText += `<div style="margin-top: 10px; padding-top: 6px; font-weight: 800; color: var(--green);">المجموع: ${calculatedTotal.toLocaleString('en-US')} ل.س</div>`;
+                    itemsForPrint += `<div style="margin-top:8px; border-top:1px dashed #000; padding-top:6px; font-weight:bold;">المجموع: ${calculatedTotal.toLocaleString('en-US')} ل.س</div>`;
+                }
+
+                const time = new Date(order.created_at).toLocaleTimeString('ar-SY', {hour: '2-digit', minute:'2-digit'});
+                const tableHeaderLabel = esc(formatTableLabel(order.table_number));
+                const printTableLabel = (order.table_number && order.table_number !== 'غير معروف' && order.table_number !== 'زبون عام') ? `الطاولة: ${order.table_number}` : 'الطلب: زبون عام';
+                // نحفظ بيانات الطباعة في خريطة بمفتاح معرّف الطلب (UUID آمن) بدل حقنها داخل onclick
+                window.__printJobs[order.id] = { table: printTableLabel, time, items: itemsForPrint };
+
+                container.innerHTML += `
+                    <div class="card" id="order-${order.id}">
+                        <div>
+                            <div class="card-header">
+                                <span>${tableHeaderLabel}</span>
+                                <span style="color:var(--gold); font-size:0.95rem;">⏰ ${time}${(statusFilter === 'pending' || statusFilter === 'preparing') ? elapsed(order.created_at) : ''}</span>
+                            </div>
+                            <div class="order-items">${itemsText}</div>
+                        </div>
+                        <div class="actions-row">
+                            ${(statusFilter === 'pending' || statusFilter === 'preparing') ? `<button class="action-btn btn-ready" onclick="markReady('${order.id}')">✔️ جاهز</button>` : ''}
+                            <button class="action-btn btn-print" onclick="printReceipt('${order.id}')">🖨️ طباعة</button>
+                            <button class="action-btn btn-danger" style="flex:0.4;" onclick="deleteOrder('${order.id}', '${order.status}')">🗑️ ${order.status === 'cancelled' ? 'حذف نهائي' : 'إلغاء'}</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (!isFirstLoad && hasNewOrder && statusFilter === 'pending') {
+                if (soundOn) alertSound.play().catch(() => {});
+            }
+            isFirstLoad = false;
+
+        } catch (err) { 
+            console.error('Error loading orders:', err.message || JSON.stringify(err), err.code || '', err.hint || '');
+            const box = document.getElementById('orders-container');
+            if (box) box.innerHTML = `<h3 style="color:#b91c1c;width:100%;direction:ltr;text-align:left">${esc(err.message || 'خطأ غير معروف')} ${esc(err.code || '')}</h3>`;
+        }
+    }
+
+    window.markReady = async function(orderId) {
+        const db = getDB();
+        await db.from('orders').update({ status: 'ready' }).eq('id', orderId);
+        loadOrders();
+    };
+
+    window.deleteOrder = async function(orderId, currentStatus) {
+        const db = getDB();
+        
+        if (currentStatus === 'cancelled') {
+            // حذف نهائي من الداتا بيز
+            if(!confirm('هذا الطلب ملغى بالفعل. هل تريد حذفه نهائياً من قاعدة البيانات؟ (لن يظهر في التقارير بعد الآن)')) return;
+            await db.from('orders').delete().eq('id', orderId);
+        } else {
+            // Soft Delete: تغيير الحالة إلى ملغى لكي يظهر في التقارير
+            if(!confirm('هل تريد إلغاء هذا الطلب؟ (سيتم تسجيله كطلب ملغى في التقارير ولن يتم حذفه نهائياً)')) return;
+            await db.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
+        }
+        
+        loadOrders();
+    };
+
+    window.printReceipt = function(orderId) {
+        const job = window.__printJobs[orderId];
+        if (!job) return;
+        // رقم الطاولة والوقت نهرّبهما (قد يحتوي رقم الطاولة على نص من الزبون)؛ عناصر الطلب مُهرّبة مسبقاً أثناء بنائها
+        const printWindow = window.open('', '_blank', 'width=300,height=500');
+        printWindow.document.write(`
+            <html dir="rtl">
+            <head>
+                <title>إيصال ديلي دوز</title>
+                <style>
+                    body { font-family: Tahoma, sans-serif; text-align: center; margin: 20px; color: black; }
+                    h2 { margin: 5px 0; font-size: 24px; }
+                    .table-num { font-size: 20px; font-weight: bold; margin: 10px 0; border-bottom: 1px dashed black; padding-bottom: 10px;}
+                    .items { text-align: right; margin: 15px 0; font-size: 16px; line-height: 1.6; }
+                    .footer { margin-top: 20px; font-size: 14px; border-top: 1px dashed black; padding-top: 10px;}
+                </style>
+            </head>
+            <body>
+                <h2>Daily Dose ☕</h2>
+                <div class="table-num">${esc(job.table)}<br><span style="font-size:14px; font-weight:normal;">الوقت: ${esc(job.time)}</span></div>
+                <div class="items">${job.items}</div>
+                <div class="footer">شكراً لزيارتكم ديلي دوز!</div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+    };
+
+    /* ================= 2. إدارة المنيو والمخزون ================= */
+    async function loadCategories() {
+        const db = getDB();
+        const { data: cats, error } = await db.from('categories').select('id, name').eq('restaurant_id', restaurantId);
+        if (error) return console.error('Error loading categories:', error);
+
+        categoriesMap = {};
+        const selectEl = document.getElementById('item-category-select');
+        const filterEl = document.getElementById('menu-category-filter');
+        
+        selectEl.innerHTML = '<option value="">-- اختر القسم --</option>';
+        filterEl.innerHTML = '<option value="all">كل الأقسام</option>';
+
+        if (cats && cats.length > 0) {
+            cats.forEach(c => {
+                categoriesMap[c.id] = c.name;
+                selectEl.innerHTML += `<option value="${c.id}">${esc(c.name)}</option>`;
+                filterEl.innerHTML += `<option value="${c.id}">${esc(c.name)}</option>`;
+            });
+        }
+    }
+
+    async function loadMenu() {
+        const db = getDB();
+        document.getElementById('menu-container').innerHTML = 'جاري جلب عناصر المنيو...';
+        await loadCategories();
+
+        const { data: items, error } = await db.from('products').select('*').eq('restaurant_id', restaurantId);
+        if (error) return console.error('Error loading products:', error);
+
+        cachedProducts = items || [];
+        renderFilteredProducts();
+    }
+
+    window.renderFilteredProducts = function() {
+        const container = document.getElementById('menu-container');
+        const selectedCat = document.getElementById('menu-category-filter').value;
+        const filtered = selectedCat === 'all' ? cachedProducts : cachedProducts.filter(p => p.category_id === selectedCat);
+
+        if (!filtered || filtered.length === 0) {
+            container.innerHTML = '<p>لا توجد أصناف في هذا القسم.</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+        filtered.forEach(item => {
+            const isAvail = item.is_available !== false;
+            const catName = categoriesMap[item.category_id] || 'عام';
+            container.innerHTML += `
+                <div class="card">
+                    <div>
+                        <div class="card-header">
+                            <span>${esc(item.name)}</span>
+                            <span class="badge ${isAvail ? 'badge-avail' : 'badge-out'}">${isAvail ? 'متوفر' : 'نفد من المخزون'}</span>
+                        </div>
+                        <p style="color:#666; margin-bottom:8px;">القسم: <strong>${catName}</strong></p>
+                        <p style="color:var(--green); font-size:1.2rem; font-weight:bold;">السعر: ${item.price}</p>
+                    </div>
+                    <div class="actions-row">
+                        <button class="action-btn ${isAvail ? 'btn-warning' : 'btn-success'}" onclick="toggleItemAvailability('${item.id}', ${isAvail})">
+                            ${isAvail ? 'إيقاف' : 'تفعيل'}
+                        </button>
+                        <button class="action-btn btn-print" onclick="editMenuItem('${item.id}')">تعديل ✏️</button>
+                        <button class="action-btn btn-danger" onclick="deleteMenuItem('${item.id}')">حذف 🗑️</button>
+                    </div>
+                </div>
+            `;
+        });
+    };
+
+    window.editMenuItem = function(id) {
+        const item = cachedProducts.find(p => p.id === id);
+        if(!item) return;
+        
+        document.getElementById('item-name').value = item.name || '';
+        document.getElementById('item-category-select').value = item.category_id || '';
+        document.getElementById('item-price').value = item.price || '';
+        document.getElementById('item-image').value = item.image_url || '';
+        
+        currentEditProductId = id; // حفظ المعرف للتعديل لاحقاً
+        
+        const btn = document.getElementById('save-menu-btn');
+        btn.innerHTML = '💾 حفظ التعديلات';
+        btn.style.background = 'var(--warning)';
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // تمرير للأعلى
+    };
+
+    window.addOrUpdateMenuItem = async function() {
+        const name = document.getElementById('item-name').value.trim();
+        const category_id = document.getElementById('item-category-select').value;
+        const price = document.getElementById('item-price').value.trim();
+        const image_url = document.getElementById('item-image').value.trim();
+
+        if(!name || !category_id || !price) return alert('يرجى إدخال اسم الصنف، اختيار القسم، والسعر!');
+
+        const db = getDB();
+        const payload = {
+            restaurant_id: restaurantId,
+            category_id,
+            name,
+            price: Number(price),
+            is_available: true
+        };
+        if (image_url) payload.image_url = image_url;
+
+        let errorObj;
+        
+        if (currentEditProductId) {
+            // عملية تعديل
+            const { error } = await db.from('products').update(payload).eq('id', currentEditProductId);
+            errorObj = error;
+        } else {
+            // عملية إضافة جديدة
+            const { error } = await db.from('products').insert([payload]);
+            errorObj = error;
+        }
+
+        if(errorObj) return alert('حدث خطأ: ' + errorObj.message);
+
+        // إعادة تفريغ الحقول وإرجاع الزر لوضعه الطبيعي
+        document.getElementById('item-name').value = '';
+        document.getElementById('item-price').value = '';
+        document.getElementById('item-image').value = '';
+        currentEditProductId = null;
+        
+        const btn = document.getElementById('save-menu-btn');
+        btn.innerHTML = '+ إضافة للمنيو';
+        btn.style.background = 'var(--gold)';
+        
+        loadMenu();
+    };
+
+    window.toggleItemAvailability = async function(id, currentStatus) {
+        const db = getDB();
+        await db.from('products').update({ is_available: !currentStatus }).eq('id', id);
+        loadMenu();
+    };
+
+    window.deleteMenuItem = async function(id) {
+        if(!confirm('هل أنت متأكد من حذف هذا الصنف من المنيو؟')) return;
+        const db = getDB();
+        await db.from('products').delete().eq('id', id);
+        loadMenu();
+    };
+
+    /* ================= 3. إدارة الطاولات مع QR Code ================= */
+    const DEFAULT_MENU_URL = 'https://jadkraeem.github.io/daily-dose/'; // رابط المنيو الافتراضي لكل الـ QR
+    function getMenuBase() {
+        return localStorage.getItem('menuUrl') || DEFAULT_MENU_URL;
+    }
+    function tableUrl(n) {
+        const base = getMenuBase();
+        return base + (base.includes('?') ? '&' : '?') + 'table=' + encodeURIComponent(n);
+    }
+    window.saveMenuUrl = function() {
+        let u = document.getElementById('menu-url-input').value.trim();
+        if (!/^https?:\/\//i.test(u)) return alert('اكتب الرابط كاملاً ويبدأ بـ https://');
+        u = u.split('?')[0].split('#')[0];
+        if (/casher[^/]*\.html$/i.test(u)) return alert('هذا رابط الكاشير! اكتب رابط المنيو الذي يفتحه الزبون.');
+        localStorage.setItem('menuUrl', u);
+        loadTables();
+    };
+
+    async function loadTables() {
+        document.getElementById('menu-url-input').value = getMenuBase();
+        const db = getDB();
+        const container = document.getElementById('tables-container');
+        container.innerHTML = 'جاري تحميل الطاولات...';
+
+        const { data: tables, error } = await db.from('tables').select('*').order('table_number', { ascending: true });
+        if (error) return console.error('Error loading tables:', error);
+
+        container.innerHTML = '';
+        if(!tables || tables.length === 0) return container.innerHTML = '<p>لم يتم إضافة طاولات بعد.</p>';
+
+        tables.forEach(t => {
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(tableUrl(t.table_number))}`;
+            container.innerHTML += `
+                <div class="card" style="text-align:center;">
+                    <h3 style="color:var(--green); font-size:1.5rem; margin-bottom:8px;">🪑 طاولة ${t.table_number}</h3>
+                    <img src="${qrApiUrl}" alt="QR طاولة ${t.table_number}" style="width:120px; height:120px; margin: 10px auto; display:block; border-radius:10px; border:2px solid var(--gold); padding:5px;">
+                    <small style="color:#777; margin-bottom:15px; display:block; direction:ltr; word-break:break-all;">${esc(tableUrl(t.table_number))}</small>
+                    <button class="action-btn btn-danger" onclick="deleteTable(${t.id})">حذف الطاولة 🗑️</button>
+                </div>
+            `;
+        });
+    }
+
+    window.addTable = async function() {
+        const num = document.getElementById('table-num-input').value.trim();
+        if(!num) return alert('أدخل رقم الطاولة');
+        
+        const db = getDB();
+        const qrUrl = tableUrl(num);
+        
+        const { error } = await db.from('tables').insert([{ 
+            table_number: parseInt(num),
+            qr_code_url: qrUrl
+        }]);
+        
+        if(error) return alert('خطأ في الإضافة: ' + error.message);
+        document.getElementById('table-num-input').value = '';
+        loadTables();
+    };
+
+    window.deleteTable = async function(id) {
+        if(!confirm('حذف هذه الطاولة؟')) return;
+        const db = getDB();
+        await db.from('tables').delete().eq('id', id);
+        loadTables();
+    };
+
+    /* ================= 4. إدارة العروض ================= */
+    async function loadPromos() {
+        const db = getDB();
+        const container = document.getElementById('promos-list');
+        const { data: promos, error } = await db.from('promotions').select('*').eq('restaurant_id', restaurantId).order('created_at', { ascending: false });
+
+        container.innerHTML = '';
+        if (error || !promos || promos.length === 0) return container.innerHTML = '<p>لا توجد عروض مسجلة.</p>';
+
+        promos.forEach(p => {
+            container.innerHTML += `
+                <div class="card">
+                    <div class="card-header">
+                        <span>📢 عرض إعلاني</span>
+                        <span class="badge ${p.is_active ? 'badge-avail' : 'badge-out'}">${p.is_active ? 'فعال حالياً' : 'متوقف'}</span>
+                    </div>
+                    <p style="font-size:1.1rem; font-weight:bold; margin: 12px 0;">${esc(p.title)}</p>
+                    <div class="actions-row">
+                        <button class="action-btn ${p.is_active ? 'btn-warning' : 'btn-success'}" onclick="togglePromo('${p.id}', ${p.is_active})">
+                            ${p.is_active ? 'إيقاف' : 'تفعيل'}
+                        </button>
+                        <button class="action-btn btn-danger" onclick="deletePromo('${p.id}')">حذف 🗑️</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    window.savePromo = async function() {
+        const db = getDB();
+        const text = document.getElementById('promo-text').value.trim();
+        if(!text) return alert('يرجى كتابة نص العرض');
+        await db.from('promotions').update({ is_active: false }).eq('restaurant_id', restaurantId);
+        const { error } = await db.from('promotions').insert([{ restaurant_id: restaurantId, title: text, is_active: true }]);
+        if (error) return alert('حدث خطأ أثناء حفظ العرض: ' + error.message);
+        document.getElementById('promo-text').value = '';
+        loadPromos();
+    };
+
+    window.togglePromo = async function(id, currentState) {
+        const db = getDB();
+        await db.from('promotions').update({ is_active: !currentState }).eq('id', id);
+        loadPromos();
+    };
+
+    window.deletePromo = async function(id) {
+        if(!confirm('حذف هذا الإعلان نهائياً؟')) return;
+        await getDB().from('promotions').delete().eq('id', id);
+        loadPromos();
+    };
+
+    /* ================= 5. إدارة الفعاليات ================= */
+    async function loadEvents() {
+        const db = getDB();
+        const container = document.getElementById('events-list');
+        const { data: events, error } = await db.from('events').select('*').eq('restaurant_id', restaurantId).order('event_date', { ascending: false });
+
+        container.innerHTML = '';
+        if (error || !events || events.length === 0) return container.innerHTML = '<p>لا توجد فعاليات مضافة.</p>';
+
+        events.forEach(ev => {
+            container.innerHTML += `
+                <div class="card">
+                    <div class="card-header"><span>📅 ${esc(ev.event_title)}</span></div>
+                    <p style="color:#555; margin-bottom:8px;">التفاصيل: <strong>${esc(ev.description || '-')}</strong></p>
+                    <p style="color:var(--green); margin-bottom:15px;">التاريخ: <strong>${ev.event_date || '-'}</strong></p>
+                    <button class="action-btn btn-danger" onclick="deleteEvent('${ev.id}')">حذف الفعالية 🗑️</button>
+                </div>
+            `;
+        });
+    }
+
+    window.saveEvent = async function() {
+        const db = getDB();
+        const title = document.getElementById('event-title').value.trim();
+        const desc = document.getElementById('event-desc').value.trim();
+        const dateInput = document.getElementById('event-date').value;
+        if(!title) return alert('يرجى إدخال اسم الفعالية');
+        
+        const { error } = await db.from('events').insert([{ 
+            restaurant_id: restaurantId, event_title: title, description: desc, 
+            event_date: dateInput || new Date().toISOString().split('T')[0]
+        }]);
+        if (error) return alert('حدث خطأ أثناء حفظ الفعالية: ' + error.message);
+        document.getElementById('event-title').value = ''; 
+        document.getElementById('event-desc').value = '';
+        document.getElementById('event-date').value = '';
+        loadEvents();
+    };
+
+    window.deleteEvent = async function(id) {
+        if(!confirm('حذف هذه الفعالية؟')) return;
+        await getDB().from('events').delete().eq('id', id);
+        loadEvents();
+    };
+
+    /* ================= 6. إعدادات تتبع شبكة الواي فاي ================= */
+    async function loadWifiSettings() {
+        const db = getDB();
+        const btn = document.getElementById('wifi-toggle-btn');
+        const ipInput = document.getElementById('allowed-ip-input');
+
+        const { data, error } = await db.from('restaurant_settings').select('*').eq('restaurant_id', restaurantId).maybeSingle();
+
+        if (data) {
+            currentWifiStatus = Boolean(data.wifi_tracking_enabled);
+            ipInput.value = data.allowed_ip || '';
+        } else if (!error || error.code === 'PGRST116') {
+            await db.from('restaurant_settings').upsert({ restaurant_id: restaurantId, wifi_tracking_enabled: false, allowed_ip: '' }, { onConflict: 'restaurant_id' });
+            currentWifiStatus = false;
+        }
+        updateWifiButtonUI(btn);
+    }
+
+    function updateWifiButtonUI(btn) {
+        if (currentWifiStatus) {
+            btn.textContent = '🟢 التتبع مفعل (اضغط لإلغاء التتبع)';
+            btn.style.background = 'var(--danger)'; btn.style.color = 'white';
+        } else {
+            btn.textContent = '⚪ التتبع متوقف (اضغط لتفعيل التتبع)';
+            btn.style.background = 'var(--green)'; btn.style.color = 'white';
+        }
+    }
+
+    window.toggleWifiTracking = async function() {
+        const db = getDB();
+        currentWifiStatus = !currentWifiStatus;
+        const ip = document.getElementById('allowed-ip-input').value.trim();
+        await db.from('restaurant_settings').upsert({ restaurant_id: restaurantId, wifi_tracking_enabled: currentWifiStatus, allowed_ip: ip, updated_at: new Date().toISOString()}, { onConflict: 'restaurant_id' });
+        updateWifiButtonUI(document.getElementById('wifi-toggle-btn'));
+    };
+
+    window.saveAllowedIP = async function() {
+        const db = getDB();
+        const ip = document.getElementById('allowed-ip-input').value.trim();
+        await db.from('restaurant_settings').upsert({ restaurant_id: restaurantId, wifi_tracking_enabled: currentWifiStatus, allowed_ip: ip, updated_at: new Date().toISOString() }, { onConflict: 'restaurant_id' });
+        alert('تم حفظ الـ IP بنجاح!');
+    };
+
+    window.detectCurrentIP = async function() {
+        const { data, error } = await getDB().rpc('my_ip');
+        if (error || !data) return alert('تعذر جلب الـ IP. شغّل ملف 3-wifi-fix.sql بـ Supabase أولاً.\n' + (error ? error.message : ''));
+        document.getElementById('allowed-ip-input').value = data;
+        alert('الـ IP كما يراه السيرفر: ' + data + '\nتأكد أنك متصل بواي فاي الكافيه الآن، ثم اضغط "حفظ الـ IP فوراً".');
+    };
+
+    /* ================= 7. التقارير والإحصائيات الشاملة ================= */
+    /* ====== أدوات التقارير والجرد ====== */
+    const SOLD = ['ready', 'delivered'];
+    const fmt = n => Number(n || 0).toLocaleString('en-US');
+    const dkey = d => d.toLocaleDateString('en-CA');
+    const statBox = (t, v, cls = '') => `<div class="stat-box ${cls}"><span>${t}</span><h3>${v}</h3></div>`;
+    let priceMap = null, jardRows = [];
+
+    async function ensurePrices() {
+        if (priceMap) return; priceMap = {};
+        const { data } = await getDB().from('products').select('name, price').eq('restaurant_id', restaurantId);
+        (data || []).forEach(p => {
+            const pr = parseFloat(p.price) || 0, n = (p.name || '').trim();
+            priceMap[n] = pr;
+            if (n.includes('/')) { const ps = n.split('/'); priceMap[ps[0].trim()] = pr; priceMap[ps.slice(1).join('/').trim()] = pr; }
+        });
+    }
+    const itemPrice = i => parseFloat(i.price) || (priceMap && priceMap[(i.name || '').trim()]) || 0;
+    const orderTotal = o => parseFloat(o.total_price) || (Array.isArray(o.items) ? o.items.reduce((s, i) => s + itemPrice(i) * (parseInt(i.qty) || 1), 0) : 0);
+
+    async function fetchOrders(from, to) {
+        await ensurePrices();
+        let all = [], start = 0;
+        while (true) {
+            const { data, error } = await getDB().from('orders').select('*').eq('restaurant_id', restaurantId)
+                .gte('created_at', from.toISOString()).lt('created_at', to.toISOString()).order('created_at').range(start, start + 999);
+            if (error) { alert('خطأ: ' + error.message); break; }
+            all = all.concat(data || []);
+            if (!data || data.length < 1000) break;
+            start += 1000;
+        }
+        return all;
+    }
+
+    function aggregate(orders) {
+        const a = { revenue: 0, sold: 0, pending: 0, cancelled: 0, items: {}, days: {}, hours: Array(24).fill(0) };
+        orders.forEach(o => {
+            const d = new Date(o.created_at);
+            if (SOLD.includes(o.status)) {
+                const t = orderTotal(o); a.sold++; a.revenue += t;
+                a.days[dkey(d)] = (a.days[dkey(d)] || 0) + t; a.hours[d.getHours()]++;
+                (o.items || []).forEach(i => {
+                    const q = parseInt(i.qty) || 1, e = a.items[i.name] || (a.items[i.name] = { qty: 0, rev: 0 });
+                    e.qty += q; e.rev += itemPrice(i) * q;
+                });
+            } else if (o.status === 'pending' || o.status === 'preparing') a.pending++;
+            else if (o.status === 'cancelled') a.cancelled++;
+        });
+        return a;
+    }
+
+    function barChart(id, labels, values) {
+        const max = Math.max(...values, 1);
+        document.getElementById(id).innerHTML = labels.map((l, i) =>
+            `<div class="bar-col" title="${esc(l)}: ${fmt(values[i])}"><div class="bar" style="height:${(values[i] / max) * 100}%"></div><small>${esc(l)}</small></div>`).join('');
+    }
+
+    function itemsTable(id, a, limit) {
+        const rows = Object.entries(a.items).sort((x, y) => y[1].qty - x[1].qty).slice(0, limit);
+        const totalRev = a.revenue || 1;
+        jardRows = rows;
+        document.getElementById(id).innerHTML = rows.length
+            ? `<tr><th>#</th><th>الصنف</th><th>الكمية</th><th>الإيراد (ل.س)</th><th>النسبة</th></tr>` +
+              rows.map(([n, e], i) => `<tr><td>${i + 1}</td><td>${esc(n)}</td><td><strong>${e.qty}</strong></td><td>${fmt(e.rev)}</td><td>${Math.round(e.rev / totalRev * 100)}%</td></tr>`).join('')
+            : '<tr><td>لا توجد مبيعات بهذه الفترة.</td></tr>';
+    }
+
+    async function loadReports() {
+        const days = parseInt(document.getElementById('rep-range').value) || 7;
+        const to = new Date(); to.setHours(24, 0, 0, 0);
+        const from = new Date(to); from.setDate(from.getDate() - days);
+        const orders = await fetchOrders(from, to), a = aggregate(orders);
+        const total = orders.length, avg = a.sold ? a.revenue / a.sold : 0, cr = total ? Math.round(a.cancelled / total * 100) : 0;
+        document.getElementById('rep-kpis').innerHTML =
+            statBox('إجمالي الإيرادات', fmt(a.revenue) + ' ل.س', 'highlight') + statBox('طلبات مباعة', a.sold) +
+            statBox('متوسط الفاتورة', fmt(Math.round(avg)) + ' ل.س') + statBox('قيد الانتظار', a.pending) +
+            statBox('ملغاة (' + cr + '%)', a.cancelled, 'danger-box') + statBox('كل الطلبات', total);
+        const labels = [], vals = [];
+        for (let d = new Date(from); d < to; d.setDate(d.getDate() + 1)) { const k = dkey(d); labels.push(k.slice(5)); vals.push(a.days[k] || 0); }
+        barChart('rep-days', labels, vals);
+        barChart('rep-hours', a.hours.map((_, h) => h), a.hours);
+        itemsTable('rep-top', a, 10);
+    }
+
+    function periodRange(p, dateStr) {
+        const d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date(); d.setHours(0, 0, 0, 0);
+        let from = new Date(d), to = new Date(d);
+        if (p === 'day') to.setDate(to.getDate() + 1);
+        else if (p === 'week') { from.setDate(d.getDate() - ((d.getDay() + 1) % 7)); to = new Date(from); to.setDate(to.getDate() + 7); }
+        else { from = new Date(d.getFullYear(), d.getMonth(), 1); to = new Date(d.getFullYear(), d.getMonth() + 1, 1); }
+        return { from, to };
+    }
+
+    async function loadJard() {
+        const di = document.getElementById('jard-date'); if (!di.value) di.value = dkey(new Date());
+        const { from, to } = periodRange(document.getElementById('jard-period').value, di.value);
+        const last = new Date(to); last.setDate(last.getDate() - 1);
+        const a = aggregate(await fetchOrders(from, to));
+        const units = Object.values(a.items).reduce((s, e) => s + e.qty, 0);
+        document.getElementById('jard-summary').innerHTML =
+            statBox('الفترة', `<span style="font-size:1rem">${dkey(from)} → ${dkey(last)}</span>`) +
+            statBox('الإيرادات', fmt(a.revenue) + ' ل.س', 'highlight') + statBox('طلبات مباعة', a.sold) +
+            statBox('وحدات مباعة', units) + statBox('ملغاة', a.cancelled, 'danger-box');
+        itemsTable('jard-table', a, Infinity);
+        const { data: oos } = await getDB().from('products').select('name').eq('restaurant_id', restaurantId).eq('is_available', false);
+        document.getElementById('jard-oos').innerHTML = (oos && oos.length) ? oos.map(p => `<span class="oos">${esc(p.name)}</span>`).join('') : '<span style="color:#887b68">كل الأصناف متوفرة ✓</span>';
+    }
+
+    window.exportJardCSV = function() {
+        if (!jardRows.length) return alert('لا توجد بيانات للتصدير');
+        const csv = '\ufeff' + 'الصنف,الكمية,الإيراد\n' + jardRows.map(([n, e]) => `"${n.replace(/"/g, '""')}",${e.qty},${e.rev}`).join('\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        a.download = 'inventory-' + document.getElementById('jard-date').value + '.csv'; a.click();
+    };
+
+    /* ====== إضافات: الصوت + مؤقت الطلب ====== */
+    let soundOn = localStorage.getItem('sound') !== 'off';
+    function refreshSoundBtn() { document.getElementById('sound-btn').textContent = soundOn ? '🔔 الصوت: تشغيل' : '🔕 الصوت: إيقاف'; }
+    window.toggleSound = function() { soundOn = !soundOn; localStorage.setItem('sound', soundOn ? 'on' : 'off'); refreshSoundBtn(); };
+    window.addEventListener('DOMContentLoaded', refreshSoundBtn);
+    function elapsed(iso) {
+        const m = Math.max(0, Math.floor((Date.now() - new Date(iso)) / 60000));
+        return ` <b style="color:${m > 10 ? '#ef4444' : '#10b981'}">(${m} د)</b>`;
+    }
+
+    /* ================= 8. إدارة الموظفين ================= */
+    async function loadStaff() {
+        const db = getDB();
+        const container = document.getElementById('staff-container');
+        const { data: staff, error } = await db.from('staff_members').select('*').eq('restaurant_id', restaurantId);
+
+        container.innerHTML = '';
+        if (error || !staff || staff.length === 0) return container.innerHTML = '<p>لا يوجد موظفين مسجلين بعد.</p>';
+
+        staff.forEach(s => {
+            container.innerHTML += `
+                <div class="card">
+                    <div class="card-header"><span>👤 ${esc(s.name)}</span><span class="badge badge-avail">${esc(s.role)}</span></div>
+                    <p style="margin:10px 0;">رمز الدخول (PIN): <strong>${s.pin_code || s.pin || 'غير محدد'}</strong></p>
+                    <button class="action-btn btn-danger" onclick="deleteStaff('${s.id}')">حذف الموظف 🗑️</button>
+                </div>
+            `;
+        });
+    }
+
+    window.addStaff = async function() {
+        const name = document.getElementById('staff-name').value.trim();
+        const role = document.getElementById('staff-role').value;
+        const pin_code = document.getElementById('staff-pin').value.trim();
+        if(!name) return alert('أدخل اسم الموظف');
+
+        const { error } = await getDB().from('staff_members').insert([{ restaurant_id: restaurantId, name, role, pin_code }]);
+        if (error) return alert('حدث خطأ أثناء إضافة الموظف: ' + error.message);
+        document.getElementById('staff-name').value = ''; document.getElementById('staff-pin').value = '';
+        loadStaff();
+    };
+
+    window.deleteStaff = async function(id) {
+        if(!confirm('حذف هذا الموظف؟')) return;
+        await getDB().from('staff_members').delete().eq('id', id);
+        loadStaff();
+    };
+
+    /* ================= 9. الاستماع اللحظي للطلبات والتحديثات (Realtime) ================= */
+    function setupRealtimeSubscriptions() {
+        const db = getDB();
+        if (!db) return;
+
+        db.channel('cashier_live_sync')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+              if (document.getElementById('orders')?.classList.contains('active')) loadOrders();
+              if (document.getElementById('reports')?.classList.contains('active')) loadReports();
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+              if (document.getElementById('menu')?.classList.contains('active')) loadMenu();
+          })
+          .subscribe();
+    }
+
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+    const AI_URL = 'https://delicate-unit-5ea6.dailydosecafe.workers.dev'; // غيّره برابط الـ Worker بعد النشر
+    let aiHistory = [];
+    function aiBubble(text, who) {
+        const d = document.createElement('div');
+        d.className = 'ai-msg ' + who; d.textContent = text;
+        const box = document.getElementById('ai-chat');
+        box.appendChild(d); box.scrollTop = box.scrollHeight; return d;
+    }
+    window.askAI = async function(preset) {
+        const inp = document.getElementById('ai-input');
+        const q = (typeof preset === 'string' ? preset : inp.value).trim();
+        if (!q) return;
+        inp.value = '';
+        aiBubble(q, 'me');
+        const wait = aiBubble('...', 'bot');
+        const btn = document.getElementById('ai-send'); btn.disabled = true;
+        try {
+            const { data } = await getDB().auth.getSession();
+            const res = await fetch(AI_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (data.session?.access_token || '') },
+                body: JSON.stringify({ question: q, role: 'cashier', history: aiHistory })
+            });
+            const j = await res.json();
+            wait.textContent = j.answer || 'حدث خطأ.';
+            aiHistory.push({ role: 'user', content: q }, { role: 'assistant', content: wait.textContent });
+            aiHistory = aiHistory.slice(-8);
+        } catch (e) { wait.textContent = 'تعذر الاتصال بالمساعد.'; }
+        btn.disabled = false;
+    };
+
+    let loginTries = 0;
+    async function requireLogin() {
+        const db = getDB();
+        if (!db) {
+            if (++loginTries > 10) {
+                document.getElementById('login-err').textContent = 'تعذر تحميل مكتبة Supabase. افتح الصفحة بمتصفح عادي (Chrome) وليس متصفح VS Code الداخلي، أو عبر Live Server.';
+            } else setTimeout(requireLogin, 300);
+            return;
+        }
+        const { data } = await db.auth.getSession();
+        document.getElementById('login-overlay').style.display = data.session ? 'none' : 'flex';
+        if (data.session) loadOrders();
+    }
+    window.doLogin = async function() {
+        const emailSent = document.getElementById('login-email').value.replace(/[\s\u200b-\u200f\u202a-\u202e]/g, '').toLowerCase();
+        const passSent = document.getElementById('login-pass').value.trim();
+        const { error } = await getDB().auth.signInWithPassword({ email: emailSent, password: passSent });
+        // رسالة واضحة بدون كشف أي تفاصيل عن الحساب أو كلمة المرور
+        document.getElementById('login-err').textContent = !error ? ''
+            : (error.status === 400 || /invalid/i.test(error.message)) ? 'البريد أو كلمة المرور غلط.'
+            : /fetch|network/i.test(error.message) ? 'تعذّر الاتصال بالإنترنت، حاول مرة أخرى.'
+            : 'تعذّر تسجيل الدخول، حاول مرة أخرى.';
+        if (!error) { document.getElementById('login-pass').value = ''; requireLogin(); }
+    };
+    window.doLogout = async function() { await getDB().auth.signOut(); requireLogin(); };
+    window.addEventListener('DOMContentLoaded', requireLogin);
+
+    window.addEventListener('DOMContentLoaded', () => {
+        loadOrders();
+        setupRealtimeSubscriptions();
+        setInterval(() => {
+            if(document.getElementById('orders')?.classList.contains('active')) loadOrders();
+        }, 5000);
+    });
+    
+    setTimeout(loadOrders, 600);
+</script>
+
+</body>
+</html>
