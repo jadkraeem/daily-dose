@@ -918,6 +918,9 @@ button { font-family: inherit; cursor: pointer; }
 
     window.loySaveSettings = async function() {
         const db = getDB();
+        // إيقاف البطاقة بيمنع الزبائن من التسجيل ومن فتح بطاقاتهم: نطلب تأكيد
+        if (!document.getElementById('loy-active').checked &&
+            !confirm('⚠️ «البطاقة شغّالة» مو معلّمة.\nإذا حفظت هيك، الزبائن ما رح يقدروا يسجّلوا ولا يرجّعوا بطاقاتهم.\n\nمتأكد بدك توقف بطاقة الولاء؟')) return;
         const { error } = await db.rpc('loyalty_save_settings', {
             p_needed: Number(document.getElementById('loy-needed').value),
             p_reward: document.getElementById('loy-reward').value,
