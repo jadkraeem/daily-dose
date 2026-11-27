@@ -88,6 +88,18 @@ a { color: inherit; }
 .tape-track span::after { content: "✦"; margin-inline-start: 40px; color: var(--gold); }
 @keyframes tape { to { transform: translateX(50%); } }
 
+/* بوكس الإعلانات والفعاليات (من الكاشير) */
+.boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 34px var(--pad) 0; background: var(--cream); }
+@media (max-width: 760px) { .boxes { grid-template-columns: 1fr; } }
+.box { background: var(--white); border: 1px solid var(--line-l); border-radius: 18px; padding: 14px 18px 16px; overflow: hidden; min-width: 0; }
+.box h3 { margin: 0 0 10px; font: 800 17px var(--head); color: var(--green); display: flex; align-items: baseline; gap: 10px; }
+.box h3 .label { font-size: 11px; color: var(--muted); }
+.ticker { overflow: hidden; border-top: 1px dashed var(--line-l); padding-top: 10px; }
+.ticker-track { display: flex; width: max-content; animation: tick var(--dur, 30s) linear infinite; }
+.ticker-track span { white-space: nowrap; font: 700 15px var(--body); color: var(--text); }
+.ticker-track span::after { content: "✦"; margin-inline: 30px; color: var(--gold); }
+@keyframes tick { to { transform: translateX(50%); } }
+
 /* تبويبات الأقسام */
 .tabs { position: sticky; top: calc(64px + env(safe-area-inset-top)); z-index: 30; background: var(--cream); border-bottom: 1px solid var(--line-l); }
 .tabs-in { display: flex; gap: 26px; padding: 0 var(--pad); overflow-x: auto; scrollbar-width: none; position: relative; }
@@ -205,7 +217,7 @@ footer .copy { font: 400 11.5px var(--mono); opacity: .55; }
 .rise { opacity: 0; transform: translateY(26px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
 .rise.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  .hand { animation: none; clip-path: none; } .tape-track { animation: none; } .rise { opacity: 1; transform: none; }
+  .hand { animation: none; clip-path: none; } .rise { opacity: 1; transform: none; }
   .rc-slot > .rc { transform: none !important; } .sheet, .cartbar { transition: none; }
 }
 </style>
@@ -249,6 +261,11 @@ footer .copy { font: 400 11.5px var(--mono); opacity: .55; }
       <div>بطاقة الأختام<br>مع كل طلب ختم</div>
     </div>
   </section>
+
+  <div class="boxes">
+    <div class="box"><h3>إعلانات ديلي دوز<span class="label">ANNOUNCEMENTS</span></h3><div class="ticker"><div class="ticker-track" id="promoTicker"></div></div></div>
+    <div class="box"><h3>الفعاليات<span class="label">EVENTS</span></h3><div class="ticker"><div class="ticker-track" id="eventTicker"></div></div></div>
+  </div>
 
   <div class="tape-wrap" aria-hidden="true"><div class="tape"><div class="tape-track" id="tape"></div></div></div>
 
@@ -342,6 +359,7 @@ footer .copy { font: 400 11.5px var(--mono); opacity: .55; }
     return { ar: full, en: '' };
   }
 
+  let menuSig = '';
   async function loadMenu() {
     const [{ data: cats, error: e1 }, { data: prods, error: e2 }] = await Promise.all([
       dbClient.from('categories').select('id, name').eq('restaurant_id', restaurantId),
@@ -350,6 +368,9 @@ footer .copy { font: 400 11.5px var(--mono); opacity: .55; }
     if (e1 || e2 || !prods) throw (e1 || e2 || new Error('no data'));
     const order = Object.keys(CATS);
     const list = (cats || []).slice().sort((a, b) => (order.indexOf(a.id) + 1 || 99) - (order.indexOf(b.id) + 1 || 99));
+    const sig = JSON.stringify([list, prods.map((p) => [p.id, p.category_id, p.name, p.price, p.is_available])]);
+    if (built && sig === menuSig) return;   // ما تغيّر شي: ما منهزّ الشاشة
+    menuSig = sig;
     items = {};
     sections = list.map((c) => ({
       id: c.id, name: (c.name || '').trim(), code: (CATS[c.id] || [])[0] || 'hot', en: (CATS[c.id] || [])[1] || '',
@@ -512,19 +533,32 @@ footer .copy { font: 400 11.5px var(--mono); opacity: .55; }
   let tt;
   function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => el.classList.remove('on'), 1700); }
 
-  // ---------- اللاصق: العروض والفعاليات من الكاشير ----------
-  async function loadTape() {
-    let words = [];
-    try {
-      const [{ data: promos }, { data: events }] = await Promise.all([
-        dbClient.from('promotions').select('title').eq('restaurant_id', restaurantId).eq('is_active', true).order('created_at', { ascending: false }),
-        dbClient.from('events').select('event_title, description, event_date').eq('restaurant_id', restaurantId).order('event_date', { ascending: false })
-      ]);
-      words = (promos || []).map((p) => p.title).concat((events || []).map((e) => e.event_title + (e.description ? ' · ' + e.description : ''))).filter(Boolean);
-    } catch (e) { /* بدون إنترنت: منكمّل بالكلمات الافتراضية */ }
-    if (!words.length) words = ['أكثر من مجرد قهوة', 'حلويات طازجة كل يوم', 'اجمع الأختام والقهوة علينا', 'GOOD COFFEE • GOOD MOOD'];
-    let loop = words; while (loop.length < 8) loop = loop.concat(words);
+  // ---------- الشريط المايل: كلمات الكافيه (ثابتة) ----------
+  function fillTape() {
+    const words = ['Daily Dose', 'CAFE & MORE', 'أكثر من مجرد قهوة', 'GOOD COFFEE • GOOD MOOD', 'حلويات طازجة كل يوم', 'اجمع الأختام والقهوة علينا'];
+    const loop = words.concat(words, words);
     $('tape').replaceChildren(...loop.concat(loop).map((t) => h('span', { text: t })));
+  }
+
+  // ---------- بوكس الإعلانات والفعاليات من الكاشير ----------
+  function ticker(el, words) {
+    let loop = words.slice(); while (loop.length < 6) loop = loop.concat(words);
+    el.replaceChildren(...loop.concat(loop).map((t) => h('span', { text: t })));
+    const chars = loop.reduce((n, t) => n + t.length, 0);
+    el.style.setProperty('--dur', Math.max(24, Math.round(chars * 0.2)) + 's');
+  }
+  let boxSig = '';
+  async function loadBoxes() {
+    const [{ data: promos, error: e1 }, { data: events, error: e2 }] = await Promise.all([
+      dbClient.from('promotions').select('title').eq('restaurant_id', restaurantId).eq('is_active', true).order('created_at', { ascending: false }),
+      dbClient.from('events').select('event_title, description, event_date').eq('restaurant_id', restaurantId).order('event_date', { ascending: false })
+    ]);
+    if (e1 || e2) throw (e1 || e2);
+    const pw = (promos || []).map((p) => p.title).filter(Boolean);
+    const ew = (events || []).map((e) => e.event_title + (e.description || e.event_date ? ' (' + (e.description || e.event_date) + ')' : '')).filter(Boolean);
+    const sig = JSON.stringify([pw, ew]); if (sig === boxSig) return; boxSig = sig;   // بلا إعادة رسم إذا ما تغيّر شي
+    ticker($('promoTicker'), pw.length ? pw : ['أهلًا بكم في ديلي دوز. استمتعوا بأشهى القهوة والمشروبات.']);
+    ticker($('eventTicker'), ew.length ? ew : ['ترقّبوا فعالياتنا وسهراتنا القادمة.']);
   }
 
   // ---------- بطاقة الأختام ----------
@@ -595,25 +629,32 @@ footer .copy { font: 400 11.5px var(--mono); opacity: .55; }
   // ---------- التشغيل ----------
   $('where').textContent = tableFromQR ? '// طاولة ' + tableFromQR + ' · يصلك الطلب لطاولتك' : '// طلب عام · تستلم من الكاشير';
   if (tableFromQR) $('infoTable').replaceChildren('طاولتك', h('br'), 'رقم ' + tableFromQR);
-  observe(); loadTape(); loadLoyalty(); sync();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadLoyalty(); });
+  fillTape(); ticker($('promoTicker'), ['…']); ticker($('eventTicker'), ['…']);
+  observe(); loadLoyalty(); sync();
+  
 
   (async function start() {
     try {
       const { data: ok } = await dbClient.rpc('check_access', { p_restaurant: restaurantId });
       if (ok === false) { $('access-denied').classList.add('on'); return; }
     } catch (e) { /* إذا فشل الفحص بيضل المنيو مفتوح، والسيرفر بيرفض الطلب من برّا */ }
+    const refresh = () => { loadMenu().catch(() => {}); loadBoxes().catch(() => {}); };
+    // أول تحميل. إذا فشل منكمّل التحديث الدوري لحتى يرجع النت
     try { await loadMenu(); }
-    catch (e) {
-      $('menuState') ? $('menuState').textContent = 'ما قدرنا نحمّل المنيو. تأكد من الإنترنت وحدّث الصفحة.' : null;
-      return;
-    }
-    // تحديث حي من الكاشير: الأسعار، «نفد»، العروض والفعاليات
+    catch (e) { if ($('menuState')) $('menuState').textContent = 'ما قدرنا نحمّل المنيو. تأكد من الإنترنت وحدّث الصفحة.'; }
+    loadBoxes().catch(() => {});
+
+    // 1) تحديث حي من الكاشير (الأسعار، «نفد»، الإعلانات، الفعاليات)
     dbClient.channel('menu_live_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => loadMenu().catch(() => {}))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'promotions' }, loadTape)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, loadTape)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => loadMenu().catch(() => {}))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'promotions' }, () => loadBoxes().catch(() => {}))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => loadBoxes().catch(() => {}))
       .subscribe();
+    // 2) شبكة أمان: الجوال بيقطع الاتصال الحي لما الشاشة تنطفي، فمنحدّث كل 30 ثانية وعند الرجوع للصفحة
+    setInterval(() => { if (!document.hidden) refresh(); }, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); loadLoyalty(); } });
+    addEventListener('online', refresh);
   })();
 })();
 </script>
