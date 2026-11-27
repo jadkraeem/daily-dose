@@ -84,6 +84,7 @@ input:focus { border-color: var(--gold); }
 .tabs { display: flex; gap: 6px; background: var(--cream); border-radius: 999px; padding: 5px; margin-bottom: 18px; }
 .tab { flex: 1; border: 0; background: transparent; border-radius: 999px; padding: 10px 6px; font: 800 .95rem 'Cairo', sans-serif; color: #6b7a72; cursor: pointer; transition: background .2s, color .2s; }
 .tab.on { background: var(--green); color: var(--white); box-shadow: 0 6px 14px -8px var(--green); }
+.cafe-note { position: relative; margin-top: 14px; padding: 10px 14px; border-radius: 14px; background: #ffffff10; border: 1px dashed #c9a45c66; color: var(--beige); font-size: .88rem; line-height: 1.7; text-align: center; }
 .save-img { margin-top: 16px; }
 .img-modal { position: fixed; inset: 0; z-index: 9500; background: #000c; display: grid; place-items: center; padding: 16px; animation: rise .3s ease both; }
 .img-modal > div { width: 100%; max-width: 380px; text-align: center; color: var(--cream); }
@@ -147,6 +148,7 @@ input:focus { border-color: var(--gold); }
       <div class="stamps" id="stamps"></div>
       <div class="progress-text" id="progress"></div>
       <div class="reward-ready hidden" id="reward-ready"></div>
+      <p class="cafe-note" id="c-note" hidden></p>
       <div class="meta"><span id="c-redeemed"></span><span>بطاقة الولاء</span></div>
     </div>
     <div class="qr-box">
@@ -228,6 +230,9 @@ input:focus { border-color: var(--gold); }
       $('reward-ready').textContent = '🎁 عندك ' + c.reward + '! اعرض البطاقة للكاشير';
       $('reward-ready').classList.remove('hidden');
     }
+    // رسالة المقهى (من إعدادات البطاقة بالكاشير)
+    $('c-note').textContent = c.note ? 'ℹ️ ' + c.note : '';
+    $('c-note').hidden = !c.note;
     $('c-redeemed').textContent = c.rewards_redeemed ? ('استلمت ' + c.rewards_redeemed + (c.rewards_redeemed === 1 ? ' هدية' : ' هدايا')) : '';
     $('c-code').textContent = c.code.slice(0, 4) + '-' + c.code.slice(4, 8) + '-' + c.code.slice(8);
     if (!$('qr').dataset.code || $('qr').dataset.code !== c.code) {
